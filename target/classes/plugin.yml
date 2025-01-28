@@ -1,0 +1,10 @@
+name: betterminecart
+version: '1.0-SNAPSHOT'
+main: com.duskrainfall.betterminecart.BetterMinecart
+api-version: '1.21'
+commands:
+#  vehiclespeed:
+#    description: 获取当前载具速度
+#    usage: "/vehiclespeed"
+#    #permission:
+#    #aliases: vs
