@@ -15,6 +15,7 @@ import org.bukkit.inventory.ItemStack;
 public class SpeedControllerListener implements Listener {
     final public double MAX = 1.6d;
     final public double MIN = 0.1d;
+    final public Material CONTROL_ITEM = Material.RECOVERY_COMPASS;
 
     @EventHandler
     public void onClick(PlayerInteractEvent e){
@@ -24,7 +25,7 @@ public class SpeedControllerListener implements Listener {
 
         if(!player.isInsideVehicle()) return;
         //副手加速，主手减速
-        if (item_off.getType() == Material.COMPASS) {
+        if (item_off.getType() == CONTROL_ITEM) {
             if(player.getVehicle() instanceof Minecart minecart){
                 minecart.setMaxSpeed(minecart.getMaxSpeed()*2);
                 if(minecart.getMaxSpeed() > MAX) minecart.setMaxSpeed(MAX);
@@ -48,7 +49,7 @@ public class SpeedControllerListener implements Listener {
                 );
             }
         }
-        else if (item_main.getType() == Material.COMPASS) {
+        else if (item_main.getType() == CONTROL_ITEM) {
             if(player.getVehicle() instanceof Minecart minecart){
                 minecart.setMaxSpeed(minecart.getMaxSpeed()/2);
                 if(minecart.getMaxSpeed() < MIN) minecart.setMaxSpeed(MIN);

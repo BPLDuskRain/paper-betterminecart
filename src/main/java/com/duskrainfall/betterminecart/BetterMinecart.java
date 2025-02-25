@@ -18,6 +18,7 @@ public final class BetterMinecart extends JavaPlugin {
         PluginManager pluginManager =  Bukkit.getPluginManager();
         pluginManager.registerEvents(new VehicleSpeed(), this);
         pluginManager.registerEvents(new SpeedControllerListener(), this);
+        pluginManager.registerEvents(new CollisionListener(), this);
 
     }
 
