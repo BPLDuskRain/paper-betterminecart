@@ -1,4 +1,4 @@
-package com.duskrainfall.betterminecart;
+package com.duskrainfall.betterminecart.vehicle;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -18,7 +18,7 @@ import java.util.List;
 //    public boolean isOnVehicle = false;
 //}
 
-public class VehicleSpeed implements Listener {
+public class VehicleSpeedListener implements Listener {
 
 //    final private HashMap<String, PlayerInfo> infos = new HashMap<>();
 

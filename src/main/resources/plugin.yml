@@ -1,5 +1,5 @@
 name: betterminecart
-version: '1.2-SNAPSHOT'
+version: '1.3-SNAPSHOT'
 main: com.duskrainfall.betterminecart.BetterMinecart
 api-version: '1.21'
 commands:
@@ -8,3 +8,14 @@ commands:
 #    usage: "/vehiclespeed"
 #    #permission:
 #    #aliases: vs
+  vehicleback:
+    description: 速度反向
+    usage: "/vehicleback"
+    aliases: vb
+permissions:
+  spring.create:
+    description: 允许玩家创建温泉。
+    default: op
+  spring.remove:
+    description: 允许玩家移除温泉
+    default: op

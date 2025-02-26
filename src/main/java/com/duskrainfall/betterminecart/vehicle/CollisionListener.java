@@ -1,4 +1,4 @@
-package com.duskrainfall.betterminecart;
+package com.duskrainfall.betterminecart.vehicle;
 
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
@@ -7,10 +7,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.vehicle.VehicleBlockCollisionEvent;
 import org.bukkit.event.vehicle.VehicleEntityCollisionEvent;
 import org.bukkit.util.Vector;
-
-import java.util.logging.Level;
-
-import static org.bukkit.Bukkit.getLogger;
 
 public class CollisionListener implements Listener {
     @EventHandler

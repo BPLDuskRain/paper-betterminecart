@@ -1,4 +1,4 @@
-package com.duskrainfall.betterminecart;
+package com.duskrainfall.betterminecart.vehicle;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -14,9 +14,9 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 
 public class SpeedControllerListener implements Listener {
-    final public double MAX = 1.6d;
-    final public double MIN = 0.05d;
-    final public Material CONTROL_ITEM = Material.RECOVERY_COMPASS;
+    public final double MAX = 1.6d;
+    public final double MIN = 0.05d;
+    public final Material CONTROL_ITEM = Material.RECOVERY_COMPASS;
 
     @EventHandler
     public void onClick(PlayerInteractEvent e){
@@ -49,8 +49,8 @@ public class SpeedControllerListener implements Listener {
                     player.playSound(
                             player.getLocation(),
                             Sound.ENTITY_FIREWORK_ROCKET_LAUNCH,
-                            8.0f,
-                            0.2f
+                            1.0f,
+                            1.0f
                     );
                 }
                 break;
@@ -75,8 +75,8 @@ public class SpeedControllerListener implements Listener {
                     player.playSound(
                             player.getLocation(),
                             Sound.BLOCK_ANVIL_HIT,
-                            8.0f,
-                            0.2f
+                            1.0f,
+                            1.0f
                     );
                 }
                 break;
