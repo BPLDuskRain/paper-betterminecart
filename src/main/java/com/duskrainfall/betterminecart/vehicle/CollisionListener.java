@@ -1,11 +1,14 @@
 package com.duskrainfall.betterminecart.vehicle;
 
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.vehicle.VehicleBlockCollisionEvent;
 import org.bukkit.event.vehicle.VehicleEntityCollisionEvent;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 public class CollisionListener implements Listener {
@@ -35,6 +38,13 @@ public class CollisionListener implements Listener {
             minecart_attacked.setMaxSpeed(2 * Math.max(vector.getX(), vector.getZ()));
         }
         e.getEntity().setVelocity(vector.setY(Math.abs(vector.getY()) + 1).multiply(2));
+        if(e.getEntity() instanceof LivingEntity entity){
+//            entity.damage(4 * Math.max(Math.abs(vector.getX()), Math.abs(vector.getZ())));
+            entity.addPotionEffect(new PotionEffect(
+                    PotionEffectType.WEAKNESS,
+                    200, 4, false
+            ));
+        }
         e.setCancelled(true);
     }
 }

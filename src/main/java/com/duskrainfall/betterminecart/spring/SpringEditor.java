@@ -11,35 +11,27 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 
-public class EditSpringListener implements Listener {
-    private final Plugin plugin;
-    private final HashMap<Player, Long> cds = new HashMap<>();
-    private final static long CD = 2000L;
-    private final HashSet<Location> los = new HashSet<>();
+public class SpringEditor {
+    private final static HashSet<Location> los = new HashSet<>();
     private final static int RADIUS = 5;
-//    private final static long CONTINUE_TIME = 60000L;
-    private final static String CREATE = "spring.create";
-    private final static String REMOVE = "spring.remove";
+    //    private final static long CONTINUE_TIME = 60000L;
+    private final Plugin plugin;
 
-    public EditSpringListener(Plugin plugin){
+    protected SpringEditor(Plugin plugin){
         this.plugin = plugin;
     }
 
     // 创建区域
-    private void createSpring(Item item, Player player){
+    public void createSpring(Item item, Player player){
         new BukkitRunnable(){
             @Override
             public void run(){
@@ -155,7 +147,7 @@ public class EditSpringListener implements Listener {
     }
 
     // 移除效果
-    private void removeSpring(Item item, Player player){
+    public void removeSpring(Item item, Player player){
         new BukkitRunnable(){
             @Override
             public void run(){
@@ -195,52 +187,5 @@ public class EditSpringListener implements Listener {
 
             }
         }.runTaskLater(plugin, 20);
-    }
-
-    @EventHandler
-    public void whenDropping(PlayerDropItemEvent e) {
-        Player player =  e.getPlayer();
-        if(!player.isInWater()){
-            return;
-        }
-        Item item =  e.getItemDrop();
-        switch (item.getItemStack().getType()){
-            case Material.FIRE_CHARGE:
-                if(!player.hasPermission(CREATE)){
-                    player.sendActionBar(Component.text("你没有权限创建温泉！", NamedTextColor.DARK_RED));
-                    return;
-                }
-                if(cds.containsKey(player)){
-                    if(System.currentTimeMillis() - cds.get(player) < CD){
-                        player.sendActionBar(Component.text("创建温泉有 " + CD/1000 + " 秒冷却时间！", NamedTextColor.DARK_RED));
-                        return;
-                    }
-                }
-                cds.put(player, System.currentTimeMillis());
-                player.sendActionBar(Component.text("尝试创建温泉", NamedTextColor.GOLD));
-
-                createSpring(item, player);
-
-                break;
-            case Material.SNOWBALL:
-                if(!player.hasPermission(REMOVE)){
-                    player.sendActionBar(Component.text("你没有权限移除温泉！", NamedTextColor.DARK_RED));
-                    return;
-                }
-
-                if(cds.containsKey(player)){
-                    if(System.currentTimeMillis() - cds.get(player) < CD){
-                        player.sendActionBar(Component.text("移除温泉有 " + CD/1000 + " 秒冷却时间！", NamedTextColor.DARK_RED));
-                        return;
-                    }
-                }
-                cds.put(player, System.currentTimeMillis());
-                player.sendActionBar(Component.text("尝试移除温泉", NamedTextColor.GOLD));
-
-                removeSpring(item, player);
-
-                break;
-        }
-
     }
 }

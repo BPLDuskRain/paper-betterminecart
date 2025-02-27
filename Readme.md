@@ -1,6 +1,4 @@
 # Better Minecart
-Version: 1.2
-
 Author: DuskRainFall
 ## 插件效果
 ### 载具
@@ -8,7 +6,7 @@ Author: DuskRainFall
 - 控制矿车极速：通过手持物品左右键乘坐矿车极速，速度区间`0.05~1.5`格每刻
 - 加强矿车强度：会对实体造成强力击飞，并免疫撞击
 - 载具速度反向：可以通过`/vehicleback`或其缩写`/vb`将载具速度反向
-### 温泉
+### 温泉（OP权限）
 - 温泉水可以提供
   - 潮涌能量`CONDUIT_POWER`
   - 抗性提升`RESISTANCE`

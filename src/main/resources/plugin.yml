@@ -8,10 +8,10 @@ commands:
 #    usage: "/vehiclespeed"
 #    #permission:
 #    #aliases: vs
-  vehicleback:
-    description: 速度反向
-    usage: "/vehicleback"
-    aliases: vb
+  vehicle:
+    description: 速度反向/停车
+    usage: "/vehicle <back|stop>"
+    aliases: ve
 permissions:
   spring.create:
     description: 允许玩家创建温泉。
