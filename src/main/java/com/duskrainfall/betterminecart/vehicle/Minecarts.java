@@ -17,13 +17,28 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 public class Minecarts {
+    public final static Material CONTROL_ITEM = Material.RECOVERY_COMPASS;
+
     public final static double MAX = 1.6d;
+    public final static double MAX_RAIL = 1.5d;
     public final static double MIN = 0.05d;
 
-    public final static Vector flyingVelocityMod_ori = new Vector(0.95d, 0.95d, 0.95d);
-    public final static Vector flyingVelocityMod = new Vector(0.998d, 1.005d, 0.998d);
+    public final static float ANGLE_SQUARE = 45.0f;
+    public final static double CHANGE_SQUARE = 0.0004d;
+    public final static double CHANGE_HEIGHT = 0.0001d;
 
-    private static void maxSpeedUpAnimation(Minecart minecart, Player player){
+    public final static float EAST = 90f;
+    public final static float SOUTH = 180f;
+    public final static float WEST = 270f;
+    public final static float NORTH = 360f;
+
+    public final static Vector flyingVelocityMod_ori = new Vector(0.95d, 0.95d, 0.95d);
+    public final static Vector flyingVelocityMod_down = new Vector(0.995d, 1.002d, 0.995d);
+    public final static Vector flyingVelocityMod_up = new Vector(0.995d, 0.99d, 0.995d);
+
+    public final static Vector derailedVelocityMod = new Vector(0.75d, 0.75d, 0.75d);
+
+    private static void maxSpeedUpAnimation(Minecart minecart){
         minecart.getWorld().spawnParticle(
                 Particle.FIREWORK, // 粒子类型
                 minecart.getLocation().add(0, 1, 0), // 位置
@@ -32,8 +47,8 @@ public class Minecarts {
                 0.1 // 速度
         );
 
-        player.playSound(
-                player.getLocation(),
+        minecart.getWorld().playSound(
+                minecart.getLocation(),
                 Sound.ENTITY_FIREWORK_ROCKET_LAUNCH,
                 1.0f,
                 1.0f
@@ -42,18 +57,25 @@ public class Minecarts {
     public static void maxSpeedUpEvent(Minecart minecart, Player player){
         if(minecart.getMaxSpeed() >= MAX) {
             minecart.setMaxSpeed(MAX);
-            player.sendActionBar(Component.text("太快了，不能再加了！", NamedTextColor.RED));
+            player.sendActionBar(Component.text("已经解放全部速度限制", NamedTextColor.RED));
         }
         else{
             minecart.setMaxSpeed(minecart.getMaxSpeed()*2);
-            player.sendActionBar(Component.text("载具最大速度已经增加到 " +
-                    Math.min(minecart.getMaxSpeed(), 1.5d) + " block/tick", NamedTextColor.AQUA));
-
-            maxSpeedUpAnimation(minecart, player);
+            if(minecart.hasGravity()){
+                player.sendActionBar(Component.text("载具最大单向速率已经增加到 "
+                        + Math.min(minecart.getMaxSpeed(), MAX_RAIL)
+                        + " block/tick", NamedTextColor.AQUA));
+            }
+            else{
+                player.sendActionBar(Component.text("载具最大单向速率已经增加到 "
+                        + minecart.getMaxSpeed()
+                        + " block/tick", NamedTextColor.AQUA));
+            }
+            maxSpeedUpAnimation(minecart);
         }
     }
 
-    private static void maxSpeedDnAnimation(Minecart minecart, Player player){
+    private static void maxSpeedDnAnimation(Minecart minecart){
         minecart.getWorld().spawnParticle(
                 Particle.LAVA, // 粒子类型
                 minecart.getLocation().add(0, 1, 0), // 位置
@@ -62,8 +84,8 @@ public class Minecarts {
                 0.1 // 速度
         );
 
-        player.playSound(
-                player.getLocation(),
+        minecart.getWorld().playSound(
+                minecart.getLocation(),
                 Sound.BLOCK_ANVIL_HIT,
                 1.0f,
                 1.0f
@@ -72,14 +94,13 @@ public class Minecarts {
     public static void maxSpeedDnEvent(Minecart minecart, Player player){
         if(minecart.getMaxSpeed() <= MIN) {
             minecart.setMaxSpeed(MIN);
-            player.sendActionBar(Component.text("太慢了，不能再减了！", NamedTextColor.RED));
+            player.sendActionBar(Component.text("已经启用全部速度限制", NamedTextColor.RED));
         }
         else{
             minecart.setMaxSpeed(minecart.getMaxSpeed()/2);
-            player.sendActionBar(Component.text("载具最大速度已经限制到 " +
-                    minecart.getMaxSpeed() + " block/tick", NamedTextColor.AQUA));
-
-            maxSpeedDnAnimation(minecart, player);
+            player.sendActionBar(Component.text("载具最大单向速率已经限制到 "
+                    + minecart.getMaxSpeed() + " block/tick", NamedTextColor.AQUA));
+            maxSpeedDnAnimation(minecart);
         }
     }
 
@@ -91,13 +112,13 @@ public class Minecarts {
         double z = Math.abs(from.getZ() - to.getZ());
         return Math.sqrt(x*x+y*y+z*z);
     }
-    public static double getVelocity(VehicleMoveEvent e){
+    public static Vector getVelocity(VehicleMoveEvent e){
         Location from = e.getFrom();
         Location to = e.getTo();
-        double x = Math.abs(from.getX() - to.getX());
-        double y = Math.abs(from.getY() - to.getY());
-        double z = Math.abs(from.getZ() - to.getZ());
-        return Math.max(Math.max(x, z), y);
+        double x = to.getX() - from.getX();
+        double y = to.getY() - from.getY();
+        double z = to.getZ() - from.getZ();
+        return new Vector(x, y, z);
     }
 
     public static void tryStartFly(Minecart minecart, double speed){
@@ -116,11 +137,12 @@ public class Minecarts {
             @Override
             public void run(){
                 minecart.setGravity(false);
-                minecart.setFlyingVelocityMod(flyingVelocityMod);
+                minecart.setFlyingVelocityMod(flyingVelocityMod_down);
             }
         }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), delay);
     }
     public static void tryStopFly(Minecart minecart){
+        if(minecart.getVelocity().getY() > 0) return;
         switch (minecart.getLocation().add(0, -1, 0).getBlock().getType()){
             case Material.AIR: case Material.CAVE_AIR:
                 break;
@@ -145,6 +167,44 @@ public class Minecarts {
         minecart.setGravity(true);
         minecart.setFlyingVelocityMod(flyingVelocityMod_ori);
     }
+    public static void flyControl(Minecart minecart){
+        if(!(minecart.getPassengers().get(0) instanceof Player player)) return;
+        if(player.getInventory().getItemInMainHand().getType() != Minecarts.CONTROL_ITEM) return;
+
+        Location location = player.getLocation();
+        float yaw = (location.getYaw() + 180) % 360; //偏航角 180南z+ 270西x- +-360北z- 90东x+
+        float pitch = location.getPitch(); //俯仰角 正数俯角负数仰角
+
+        Vector vector = minecart.getVelocity();
+
+        if(EAST - ANGLE_SQUARE <= yaw && yaw <= EAST + ANGLE_SQUARE){
+            //x+
+            vector.setX(vector.getX() + (ANGLE_SQUARE - Math.abs(yaw - EAST)) * CHANGE_SQUARE);
+        }
+        if(SOUTH - ANGLE_SQUARE <= yaw && yaw <= SOUTH + ANGLE_SQUARE){
+            //z+
+            vector.setZ(vector.getZ() + (ANGLE_SQUARE - Math.abs(yaw - SOUTH)) * CHANGE_SQUARE);
+        }
+        if(WEST - ANGLE_SQUARE <= yaw && yaw <= WEST + ANGLE_SQUARE){
+            //x-
+            vector.setX(vector.getX() - (ANGLE_SQUARE - Math.abs(yaw - WEST)) * CHANGE_SQUARE);
+        }
+        if((NORTH - ANGLE_SQUARE <= yaw && yaw <= NORTH) || (0 <= yaw && yaw <= 0 + ANGLE_SQUARE)){
+            //z-
+            vector.setZ(vector.getZ() - (ANGLE_SQUARE - Math.min(Math.abs(yaw - NORTH), Math.abs(yaw - 0))) * CHANGE_SQUARE);
+        }
+
+        if(vector.getY() > 0){
+            //上飞
+            minecart.setFlyingVelocityMod(Minecarts.flyingVelocityMod_up);
+        }else{
+            //下飞
+            minecart.setFlyingVelocityMod(Minecarts.flyingVelocityMod_down);
+        }
+        vector.setY(vector.getY() - pitch * CHANGE_HEIGHT);//负数仰角加，正数俯角减
+
+        minecart.setVelocity(vector);
+    }
 
     private static void minecartExplosionAnimation(Minecart minecart){
         minecart.getWorld().spawnParticle(Particle.EXPLOSION, minecart.getLocation(),
@@ -157,20 +217,25 @@ public class Minecarts {
         );
     }
     public static void minecartExplosion(Minecart minecart){
-        for(Entity entity : minecart.getPassengers()){
-            if(entity instanceof Damageable eneity_damageable){
-                Vector vector = minecart.getVelocity();
-                double x = Math.abs(vector.getX());
-                double y = Math.abs(vector.getY());
-                double z = Math.abs(vector.getZ());
-                eneity_damageable.damage(10 * Math.max(Math.max(x, z), y));
-                eneity_damageable.setFireTicks(100);
+        new BukkitRunnable(){
+            @Override
+            public void run(){
+                for(Entity entity : minecart.getPassengers()){
+                    if(entity instanceof Damageable eneity_damageable){
+                        Vector vector = minecart.getVelocity();
+                        double x = Math.abs(vector.getX());
+                        double y = Math.abs(vector.getY());
+                        double z = Math.abs(vector.getZ());
+                        eneity_damageable.damage(10 * Math.max(Math.max(x, z), y));
+                        eneity_damageable.setFireTicks(100);
+                    }
+                }
+                minecart.eject();
+                minecartExplosionAnimation(minecart);
+                Springs.createSpring(minecart, 1200);
+                minecart.remove();
             }
-        }
-        minecart.eject();
-        minecartExplosionAnimation(minecart);
-        Springs.createSpring(minecart, 1200);
-        minecart.remove();
+        }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 10);
     }
 
     public static void entityCrushed(Minecart minecart, Entity entity){

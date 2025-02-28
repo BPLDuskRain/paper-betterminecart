@@ -1,6 +1,5 @@
 package com.duskrainfall.betterminecart.vehicle;
 
-import org.bukkit.Material;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -10,14 +9,13 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 
 public class DriveListener implements Listener {
-    public final Material CONTROL_ITEM = Material.RECOVERY_COMPASS;
 
     @EventHandler
     public void onClick(PlayerInteractEvent e){
         Player player = e.getPlayer();
         ItemStack item_main = player.getInventory().getItemInMainHand();
 
-        if(item_main.getType() != CONTROL_ITEM) return; //必须手持对应物品
+        if(item_main.getType() != Minecarts.CONTROL_ITEM) return; //必须手持对应物品
         if(!player.isInsideVehicle()) return; //必须在载具内
         if(!(player.getVehicle() instanceof Minecart minecart)) return; //载具必须是矿车
         //左击加速，右击空气减速

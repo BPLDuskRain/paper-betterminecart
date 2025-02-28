@@ -29,6 +29,7 @@ public final class BetterMinecart extends JavaPlugin {
 
         DropItemListener dropItemListener =  new DropItemListener();
         pluginManager.registerEvents(dropItemListener, this);
+
         Springs.springEffect();
     }
 

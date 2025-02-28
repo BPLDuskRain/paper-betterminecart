@@ -1,7 +1,9 @@
 package com.duskrainfall.betterminecart.vehicle;
 
+import com.duskrainfall.betterminecart.BetterMinecart;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
@@ -9,6 +11,9 @@ import org.bukkit.entity.Vehicle;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
 
 import java.util.List;
 
@@ -85,9 +90,10 @@ public class VehicleMovementListener implements Listener {
         //获取速度
         Vehicle vehicle = e.getVehicle();
         if(vehicle.isEmpty()) return;
+        if(!(vehicle.getPassengers().get(0) instanceof Player)) return;
 
         double speed = Minecarts.getSpeed(e);
-        double velocity = Minecarts.getVelocity(e);
+        Vector velocity = Minecarts.getVelocity(e);
 
         //获取乘客
         List<Entity> passengers = vehicle.getPassengers();
@@ -95,10 +101,26 @@ public class VehicleMovementListener implements Listener {
             if(!(passenger instanceof Player player)){
                 continue;
             }
-            player.sendActionBar(Component.text("当前速度为 "
-                    + String.format("%.2f", velocity)
-                    + '(' + String.format("%.2f", speed) + ')'
-                    + " block/tick ", NamedTextColor.GREEN));
+            player.sendActionBar(Component.text("当前速率/各向速率为 "
+                    + String.format("%.2f", speed) + '('
+                    + String.format("%.2f", velocity.getX()) + ' '
+                    + String.format("%.2f", velocity.getY()) + ' '
+                    + String.format("%.2f", velocity.getZ()) + ')'
+                    + " block/tick "
+                    , NamedTextColor.GREEN));
+            if(!vehicle.hasGravity() && speed < 0.5d){
+                new BukkitRunnable(){
+                    @Override
+                    public void run(){
+                        player.sendActionBar(Component.text("您即将失速 PULL UP!", NamedTextColor.DARK_RED));
+                        player.getWorld().playSound(
+                                player.getLocation(),
+                                Sound.BLOCK_BELL_USE,
+                                1.0f, 1.0f
+                        );
+                    }
+                }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 10);
+            }
         }
     }
 
@@ -109,13 +131,18 @@ public class VehicleMovementListener implements Listener {
         if(!(vehicle instanceof Minecart minecart)) return;
         if(!(vehicle.getPassengers().get(0) instanceof Player)) return;
 
+        if(!minecart.getDerailedVelocityMod().equals(Minecarts.derailedVelocityMod)){
+            minecart.setDerailedVelocityMod(Minecarts.derailedVelocityMod);
+        }
+
         double speed = Minecarts.getSpeed(e);
 
         if(minecart.hasGravity()){
             if(speed > 0.5d) Minecarts.tryStartFly(minecart, speed);
         }
         else{
-            if(speed < 0.5d) Minecarts.stopFly(minecart);
+            if(speed < 0.3d) Minecarts.stopFly(minecart);
+            Minecarts.flyControl(minecart);
             Minecarts.tryStopFly(minecart);
         }
     }
