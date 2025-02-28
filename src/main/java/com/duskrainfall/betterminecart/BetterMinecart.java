@@ -1,6 +1,7 @@
 package com.duskrainfall.betterminecart;
 
 import com.duskrainfall.betterminecart.spring.DropItemListener;
+import com.duskrainfall.betterminecart.spring.Springs;
 import com.duskrainfall.betterminecart.vehicle.*;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
@@ -22,13 +23,13 @@ public final class BetterMinecart extends JavaPlugin {
         vehicleCommand.setTabCompleter(new VehicleTabCompleter());
 
         PluginManager pluginManager =  Bukkit.getPluginManager();
-        pluginManager.registerEvents(new VehicleSpeedListener(), this);
-        pluginManager.registerEvents(new SpeedControllerListener(), this);
+        pluginManager.registerEvents(new VehicleMovementListener(), this);
+        pluginManager.registerEvents(new DriveListener(), this);
         pluginManager.registerEvents(new CollisionListener(), this);
 
-        DropItemListener dropItemListener =  new DropItemListener(this);
+        DropItemListener dropItemListener =  new DropItemListener();
         pluginManager.registerEvents(dropItemListener, this);
-        dropItemListener.getSpringEditer().springEffect();
+        Springs.springEffect();
     }
 
     @Override

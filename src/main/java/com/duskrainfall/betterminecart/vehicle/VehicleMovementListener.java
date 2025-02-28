@@ -2,7 +2,6 @@ package com.duskrainfall.betterminecart.vehicle;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
@@ -18,8 +17,7 @@ import java.util.List;
 //    public boolean isOnVehicle = false;
 //}
 
-public class VehicleSpeedListener implements Listener {
-
+public class VehicleMovementListener implements Listener {
 //    final private HashMap<String, PlayerInfo> infos = new HashMap<>();
 
 //    @Override
@@ -78,27 +76,18 @@ public class VehicleSpeedListener implements Listener {
 
     int count = 0;
     @EventHandler
-    public void onVehicle(VehicleMoveEvent e){
+    public void onVehicle_speed(VehicleMoveEvent e){
         if(count > 0){
             count--;
             return;
         }
-        count = 40;
+        count = 20;
         //获取速度
         Vehicle vehicle = e.getVehicle();
         if(vehicle.isEmpty()) return;
-//        Vector vector = vehicle.getVelocity();
-//        double x = vector.getX();
-//        double y = vector.getY();
-//        double z = vector.getZ();
-//        double speed = Math.sqrt(x*x+y*y+z*z);
 
-        Location from = e.getFrom();
-        Location to = e.getTo();
-        double x = Math.abs(from.getX() - to.getX());
-        double y = Math.abs(from.getY() - to.getY());
-        double z = Math.abs(from.getZ() - to.getZ());
-        double speed = Math.sqrt(x*x+y*y+z*z);
+        double speed = Minecarts.getSpeed(e);
+        double velocity = Minecarts.getVelocity(e);
 
         //获取乘客
         List<Entity> passengers = vehicle.getPassengers();
@@ -106,17 +95,28 @@ public class VehicleSpeedListener implements Listener {
             if(!(passenger instanceof Player player)){
                 continue;
             }
-            String name = player.getName();
-            if(vehicle instanceof Minecart minecart){
-                player.sendActionBar(Component.text("当前速度为 " + String.format("%.2f", speed) + " block/tick " +
-                        "单向限速为 " + String.format("%.2f", Math.min(minecart.getMaxSpeed(), 1.5d)) + " block/tick", NamedTextColor.GREEN));
-//                player.sendMessage("当前速度为 " + String.format("%.2f", speed) + " block/tick " +
-//                        "最大速度为 " + String.format("%.2f", Math.min(minecart.getMaxSpeed(), 1.5d)) + " block/tick");
-            }
-            else{
-                player.sendActionBar(Component.text("当前速度为 " + String.format("%.2f", speed) + " block/tick ", NamedTextColor.GREEN));
-//                player.sendMessage("当前速度为 " + String.format("%.2f", speed) + " block/tick ");
-            }
+            player.sendActionBar(Component.text("当前速度为 "
+                    + String.format("%.2f", velocity)
+                    + '(' + String.format("%.2f", speed) + ')'
+                    + " block/tick ", NamedTextColor.GREEN));
+        }
+    }
+
+    @EventHandler
+    public void onVehicle_fly(VehicleMoveEvent e) {
+        Vehicle vehicle = e.getVehicle();
+        if(vehicle.isEmpty()) return;
+        if(!(vehicle instanceof Minecart minecart)) return;
+        if(!(vehicle.getPassengers().get(0) instanceof Player)) return;
+
+        double speed = Minecarts.getSpeed(e);
+
+        if(minecart.hasGravity()){
+            if(speed > 0.5d) Minecarts.tryStartFly(minecart, speed);
+        }
+        else{
+            if(speed < 0.5d) Minecarts.stopFly(minecart);
+            Minecarts.tryStopFly(minecart);
         }
     }
 }

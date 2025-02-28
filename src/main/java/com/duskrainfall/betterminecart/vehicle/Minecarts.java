@@ -1,0 +1,212 @@
+package com.duskrainfall.betterminecart.vehicle;
+
+import com.duskrainfall.betterminecart.BetterMinecart;
+import com.duskrainfall.betterminecart.spring.Springs;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
+import org.bukkit.entity.*;
+import org.bukkit.event.vehicle.VehicleMoveEvent;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
+
+public class Minecarts {
+    public final static double MAX = 1.6d;
+    public final static double MIN = 0.05d;
+
+    public final static Vector flyingVelocityMod_ori = new Vector(0.95d, 0.95d, 0.95d);
+    public final static Vector flyingVelocityMod = new Vector(0.998d, 1.005d, 0.998d);
+
+    private static void maxSpeedUpAnimation(Minecart minecart, Player player){
+        minecart.getWorld().spawnParticle(
+                Particle.FIREWORK, // 粒子类型
+                minecart.getLocation().add(0, 1, 0), // 位置
+                20, // 数量
+                0.5, 0.5, 0.5, // 偏移量
+                0.1 // 速度
+        );
+
+        player.playSound(
+                player.getLocation(),
+                Sound.ENTITY_FIREWORK_ROCKET_LAUNCH,
+                1.0f,
+                1.0f
+        );
+    }
+    public static void maxSpeedUpEvent(Minecart minecart, Player player){
+        if(minecart.getMaxSpeed() >= MAX) {
+            minecart.setMaxSpeed(MAX);
+            player.sendActionBar(Component.text("太快了，不能再加了！", NamedTextColor.RED));
+        }
+        else{
+            minecart.setMaxSpeed(minecart.getMaxSpeed()*2);
+            player.sendActionBar(Component.text("载具最大速度已经增加到 " +
+                    Math.min(minecart.getMaxSpeed(), 1.5d) + " block/tick", NamedTextColor.AQUA));
+
+            maxSpeedUpAnimation(minecart, player);
+        }
+    }
+
+    private static void maxSpeedDnAnimation(Minecart minecart, Player player){
+        minecart.getWorld().spawnParticle(
+                Particle.LAVA, // 粒子类型
+                minecart.getLocation().add(0, 1, 0), // 位置
+                20, // 数量
+                0.5, 0.5, 0.5, // 偏移量
+                0.1 // 速度
+        );
+
+        player.playSound(
+                player.getLocation(),
+                Sound.BLOCK_ANVIL_HIT,
+                1.0f,
+                1.0f
+        );
+    }
+    public static void maxSpeedDnEvent(Minecart minecart, Player player){
+        if(minecart.getMaxSpeed() <= MIN) {
+            minecart.setMaxSpeed(MIN);
+            player.sendActionBar(Component.text("太慢了，不能再减了！", NamedTextColor.RED));
+        }
+        else{
+            minecart.setMaxSpeed(minecart.getMaxSpeed()/2);
+            player.sendActionBar(Component.text("载具最大速度已经限制到 " +
+                    minecart.getMaxSpeed() + " block/tick", NamedTextColor.AQUA));
+
+            maxSpeedDnAnimation(minecart, player);
+        }
+    }
+
+    public static double getSpeed(VehicleMoveEvent e){
+        Location from = e.getFrom();
+        Location to = e.getTo();
+        double x = Math.abs(from.getX() - to.getX());
+        double y = Math.abs(from.getY() - to.getY());
+        double z = Math.abs(from.getZ() - to.getZ());
+        return Math.sqrt(x*x+y*y+z*z);
+    }
+    public static double getVelocity(VehicleMoveEvent e){
+        Location from = e.getFrom();
+        Location to = e.getTo();
+        double x = Math.abs(from.getX() - to.getX());
+        double y = Math.abs(from.getY() - to.getY());
+        double z = Math.abs(from.getZ() - to.getZ());
+        return Math.max(Math.max(x, z), y);
+    }
+
+    public static void tryStartFly(Minecart minecart, double speed){
+        switch(minecart.getLocation().add(0, -1, 0).getBlock().getType()){
+            case Material.AIR: case Material.CAVE_AIR:
+                Minecarts.startFly(minecart, speed);
+                break;
+            case Material.RAIL: case Material.DETECTOR_RAIL: case Material.POWERED_RAIL:
+
+                break;
+        }
+    }
+    public static void startFly(Minecart minecart, double speed){
+        long delay = Math.round(5 / speed);
+        new BukkitRunnable(){
+            @Override
+            public void run(){
+                minecart.setGravity(false);
+                minecart.setFlyingVelocityMod(flyingVelocityMod);
+            }
+        }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), delay);
+    }
+    public static void tryStopFly(Minecart minecart){
+        switch (minecart.getLocation().add(0, -1, 0).getBlock().getType()){
+            case Material.AIR: case Material.CAVE_AIR:
+                break;
+            case Material.RAIL: case Material.DETECTOR_RAIL: case Material.POWERED_RAIL:
+                Minecarts.stopFly(minecart);
+                break;
+            case Material.WATER:
+                Minecarts.stopFly(minecart);
+                new BukkitRunnable(){
+                    @Override
+                    public void run(){
+                        Minecarts.minecartExplosion(minecart);
+                    }
+                }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 20);
+                break;
+            default:
+                Minecarts.stopFly(minecart);
+                Minecarts.minecartExplosion(minecart);
+        }
+    }
+    public static void stopFly(Minecart minecart){
+        minecart.setGravity(true);
+        minecart.setFlyingVelocityMod(flyingVelocityMod_ori);
+    }
+
+    private static void minecartExplosionAnimation(Minecart minecart){
+        minecart.getWorld().spawnParticle(Particle.EXPLOSION, minecart.getLocation(),
+                50, 1, 1, 1
+        );
+        minecart.getWorld().playSound(
+                minecart.getLocation(),
+                Sound.ENTITY_GENERIC_EXPLODE,
+                1.0f, 1.0f
+        );
+    }
+    public static void minecartExplosion(Minecart minecart){
+        for(Entity entity : minecart.getPassengers()){
+            if(entity instanceof Damageable eneity_damageable){
+                Vector vector = minecart.getVelocity();
+                double x = Math.abs(vector.getX());
+                double y = Math.abs(vector.getY());
+                double z = Math.abs(vector.getZ());
+                eneity_damageable.damage(10 * Math.max(Math.max(x, z), y));
+                eneity_damageable.setFireTicks(100);
+            }
+        }
+        minecart.eject();
+        minecartExplosionAnimation(minecart);
+        Springs.createSpring(minecart, 1200);
+        minecart.remove();
+    }
+
+    public static void entityCrushed(Minecart minecart, Entity entity){
+        Vector vector = minecart.getVelocity();
+        entity.setVelocity(vector.setY(Math.abs(vector.getY()) + 1).multiply(2));
+    }
+    public static void minecartCrushed(Minecart minecart, Minecart minecart_crushed){
+        Vector vector = minecart.getVelocity();
+        minecart_crushed.setMaxSpeed(
+                Math.max(
+                    minecart_crushed.getMaxSpeed(),
+                    2 * Math.max(
+                            Math.max(
+                                    Math.abs(vector.getX()),
+                                    Math.abs(vector.getZ())
+                            ),
+                          Math.abs(vector.getY())
+                    )
+                )
+        );
+        minecart_crushed.setVelocity(vector.multiply(2));
+    }
+    public static void livingEntityCrushed(Minecart minecart, LivingEntity livingEntity){
+        Vector vector = minecart.getVelocity();
+        livingEntity.setVelocity(vector.setY(Math.abs(vector.getY()) + 1).multiply(2));
+        livingEntity.addPotionEffect(new PotionEffect(
+                PotionEffectType.WEAKNESS,
+                200, 3, false
+        ));
+        livingEntity.addPotionEffect(new PotionEffect(
+                PotionEffectType.SLOWNESS,
+                200, 3, false
+        ));
+        livingEntity.addPotionEffect(new PotionEffect(
+                PotionEffectType.NAUSEA,
+                200, 3, false
+        ));
+    }
+}
