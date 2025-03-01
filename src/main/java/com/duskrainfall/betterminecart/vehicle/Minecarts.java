@@ -22,10 +22,13 @@ public class Minecarts {
     public final static double MAX = 1.6d;
     public final static double MAX_RAIL = 1.5d;
     public final static double MIN = 0.05d;
+    public final static double LAND_MAX_Y = -0.2d;
+    public final static double TO_FLY = 0.5d;
+    public final static double TO_FALL = 0.2d;
 
-    public final static float ANGLE_SQUARE = 45.0f;
-    public final static double CHANGE_SQUARE = 0.0004d;
-    public final static double CHANGE_HEIGHT = 0.0001d;
+    public final static float ANGLE_SQUARE = 90.0f;
+    public final static double CHANGE_SQUARE = 0.0001d;
+    public final static double CHANGE_HEIGHT = 0.00005d;
 
     public final static float EAST = 90f;
     public final static float SOUTH = 180f;
@@ -33,8 +36,9 @@ public class Minecarts {
     public final static float NORTH = 360f;
 
     public final static Vector flyingVelocityMod_ori = new Vector(0.95d, 0.95d, 0.95d);
-    public final static Vector flyingVelocityMod_down = new Vector(0.995d, 1.002d, 0.995d);
+    public final static Vector flyingVelocityMod_down = new Vector(0.995d, 1.001d, 0.995d);
     public final static Vector flyingVelocityMod_up = new Vector(0.995d, 0.99d, 0.995d);
+    public final static Vector flyingVelocityMod_land = new Vector(0.99d, 0.8d, 0.99d);
 
     public final static Vector derailedVelocityMod = new Vector(0.75d, 0.75d, 0.75d);
 
@@ -129,6 +133,8 @@ public class Minecarts {
             case Material.RAIL: case Material.DETECTOR_RAIL: case Material.POWERED_RAIL:
 
                 break;
+            default:
+                Minecarts.landing(minecart, speed);
         }
     }
     public static void startFly(Minecart minecart, double speed){
@@ -142,7 +148,6 @@ public class Minecarts {
         }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), delay);
     }
     public static void tryStopFly(Minecart minecart){
-        if(minecart.getVelocity().getY() > 0) return;
         switch (minecart.getLocation().add(0, -1, 0).getBlock().getType()){
             case Material.AIR: case Material.CAVE_AIR:
                 break;
@@ -156,7 +161,7 @@ public class Minecarts {
                     public void run(){
                         Minecarts.minecartExplosion(minecart);
                     }
-                }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 20);
+                }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 10);
                 break;
             default:
                 Minecarts.stopFly(minecart);
@@ -166,6 +171,26 @@ public class Minecarts {
     public static void stopFly(Minecart minecart){
         minecart.setGravity(true);
         minecart.setFlyingVelocityMod(flyingVelocityMod_ori);
+    }
+
+    public static boolean tryLanding(Minecart minecart, double speed, double speed_y){
+        if(speed_y < LAND_MAX_Y) return false;
+        switch (minecart.getLocation().add(0, -1, 0).getBlock().getType()){
+            case Material.AIR: case Material.CAVE_AIR:
+                return false;
+            default:
+                Minecarts.landing(minecart, speed);
+                return true;
+        }
+    }
+    public static void landing(Minecart minecart, double speed){
+        minecart.setFlyingVelocityMod(flyingVelocityMod_land);
+        if(speed > TO_FLY){
+            Minecarts.startFly(minecart, speed);
+        }
+        else if(speed < TO_FALL){
+            Minecarts.stopFly(minecart);
+        }
     }
     public static void flyControl(Minecart minecart){
         if(!(minecart.getPassengers().get(0) instanceof Player player)) return;
@@ -235,7 +260,7 @@ public class Minecarts {
                 Springs.createSpring(minecart, 1200);
                 minecart.remove();
             }
-        }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 10);
+        }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 5);
     }
 
     public static void entityCrushed(Minecart minecart, Entity entity){
@@ -271,7 +296,7 @@ public class Minecarts {
         ));
         livingEntity.addPotionEffect(new PotionEffect(
                 PotionEffectType.NAUSEA,
-                200, 3, false
+                200, 0, false
         ));
     }
 }

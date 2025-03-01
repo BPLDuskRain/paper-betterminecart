@@ -10,8 +10,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
@@ -62,22 +65,18 @@ public class VehicleMovementListener implements Listener {
 //        System.out.println("玩家" + name + "上载具");
 //    }
 //
-//    @EventHandler
-//    public void leaveVehicle(VehicleExitEvent e){
-//        Entity entity = e.getExited();
-//        //只检测玩家下载具
-//        if(!(entity instanceof Player player)) return;
-//
-//        //尝试注册hashmap
-//        String name = player.getName();
-//        if(!infos.containsKey(name)){
-//            infos.put(name, new PlayerInfo());
-//            System.out.println("玩家" + name + "成功注册");
-//        }
-//        //修改为不在车上
-//        infos.get(name).isOnVehicle = false;
-//        System.out.println("玩家" + name + "下载具");
-//    }
+    @EventHandler
+    public void leaveVehicle(VehicleExitEvent e){
+        //只检测玩家下载具
+        if(!(e.getVehicle() instanceof Minecart minecart)) return;
+        if(!(e.getExited() instanceof Player player)) return;
+        if(minecart.hasGravity()) return;
+        Minecarts.stopFly(minecart);
+        player.addPotionEffect(new PotionEffect(
+                PotionEffectType.SLOW_FALLING,
+                200, 0, false
+        ));
+    }
 
     int count = 0;
     @EventHandler
@@ -108,7 +107,7 @@ public class VehicleMovementListener implements Listener {
                     + String.format("%.2f", velocity.getZ()) + ')'
                     + " block/tick "
                     , NamedTextColor.GREEN));
-            if(!vehicle.hasGravity() && speed < 0.5d){
+            if(!vehicle.hasGravity() && speed < Minecarts.TO_FALL + 0.2d){
                 new BukkitRunnable(){
                     @Override
                     public void run(){
@@ -119,7 +118,7 @@ public class VehicleMovementListener implements Listener {
                                 1.0f, 1.0f
                         );
                     }
-                }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 10);
+                }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 5);
             }
         }
     }
@@ -138,12 +137,14 @@ public class VehicleMovementListener implements Listener {
         double speed = Minecarts.getSpeed(e);
 
         if(minecart.hasGravity()){
-            if(speed > 0.5d) Minecarts.tryStartFly(minecart, speed);
+            if(speed > Minecarts.TO_FLY) Minecarts.tryStartFly(minecart, speed);
         }
-        else{
-            if(speed < 0.3d) Minecarts.stopFly(minecart);
+        else {
+            if (speed < Minecarts.TO_FALL) Minecarts.stopFly(minecart);
             Minecarts.flyControl(minecart);
-            Minecarts.tryStopFly(minecart);
+            if (!Minecarts.tryLanding(minecart, speed, Minecarts.getVelocity(e).getY())) {
+                Minecarts.tryStopFly(minecart);
+            }
         }
     }
 }

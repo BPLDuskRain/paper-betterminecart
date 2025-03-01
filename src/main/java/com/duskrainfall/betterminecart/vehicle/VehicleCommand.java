@@ -19,6 +19,10 @@ public class VehicleCommand implements CommandExecutor {
             sender.sendMessage(executor.getName() + "不在载具中");
             return true;
         }
+        if(!executor.hasGravity()){
+            sender.sendMessage(executor.getName() + "滑翔/飞行中不可用！");
+            return true;
+        }
         Entity vehicle = executor.getVehicle();
         switch(args[0]){
             case "back": case"b":
