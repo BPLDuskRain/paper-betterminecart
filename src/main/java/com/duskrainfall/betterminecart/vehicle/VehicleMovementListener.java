@@ -140,7 +140,15 @@ public class VehicleMovementListener implements Listener {
             if(speed > Minecarts.TO_FLY) Minecarts.tryStartFly(minecart, speed);
         }
         else {
-            if (speed < Minecarts.TO_FALL) Minecarts.stopFly(minecart);
+            if (speed < Minecarts.TO_FALL) {
+                //加一点延迟 避免先于可能的碰撞触发导致碰撞不触发坠机
+                new BukkitRunnable(){
+                    @Override
+                    public void run(){
+                        Minecarts.stopFly(minecart);
+                    }
+                }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 5);
+            }
             Minecarts.flyControl(minecart);
             if (!Minecarts.tryLanding(minecart, speed, Minecarts.getVelocity(e).getY())) {
                 Minecarts.tryStopFly(minecart);

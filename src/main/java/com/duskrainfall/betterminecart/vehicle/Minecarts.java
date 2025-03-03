@@ -4,10 +4,7 @@ import com.duskrainfall.betterminecart.BetterMinecart;
 import com.duskrainfall.betterminecart.spring.Springs;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.entity.*;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -23,7 +20,7 @@ public class Minecarts {
     public final static double MAX_RAIL = 1.5d;
     public final static double MIN = 0.05d;
     public final static double LAND_MAX_Y = -0.2d;
-    public final static double TO_FLY = 0.5d;
+    public final static double TO_FLY = 0.6d;
     public final static double TO_FALL = 0.2d;
 
     public final static float ANGLE_SQUARE = 90.0f;
@@ -126,19 +123,24 @@ public class Minecarts {
     }
 
     public static void tryStartFly(Minecart minecart, double speed){
-        switch(minecart.getLocation().add(0, -1, 0).getBlock().getType()){
-            case Material.AIR: case Material.CAVE_AIR:
-                Minecarts.startFly(minecart, speed);
-                break;
+        //为了防止下坡飞出，本格和车下都需要铁轨判断
+        switch(minecart.getLocation().getBlock().getType()){
             case Material.RAIL: case Material.DETECTOR_RAIL: case Material.POWERED_RAIL:
-
                 break;
             default:
-                Minecarts.landing(minecart, speed);
+                switch(minecart.getLocation().add(0, -1, 0).getBlock().getType()){
+                    case Material.AIR: case Material.CAVE_AIR:
+                        Minecarts.startFly(minecart, speed);
+                        break;
+                    case Material.RAIL: case Material.DETECTOR_RAIL: case Material.POWERED_RAIL:
+                        break;
+                    default:
+                        Minecarts.landing(minecart, speed);
+                }
         }
     }
     public static void startFly(Minecart minecart, double speed){
-        long delay = Math.round(5 / speed);
+        var delay = Math.round(5 / speed);
         new BukkitRunnable(){
             @Override
             public void run(){
@@ -147,6 +149,7 @@ public class Minecarts {
             }
         }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), delay);
     }
+
     public static void tryStopFly(Minecart minecart){
         switch (minecart.getLocation().add(0, -1, 0).getBlock().getType()){
             case Material.AIR: case Material.CAVE_AIR:
@@ -175,60 +178,71 @@ public class Minecarts {
 
     public static boolean tryLanding(Minecart minecart, double speed, double speed_y){
         if(speed_y < LAND_MAX_Y) return false;
-        switch (minecart.getLocation().add(0, -1, 0).getBlock().getType()){
-            case Material.AIR: case Material.CAVE_AIR:
-                return false;
-            default:
+        return switch (minecart.getLocation().add(0, -1, 0).getBlock().getType()) {
+            case Material.AIR, Material.CAVE_AIR -> false;
+            case Material.RAIL, Material.DETECTOR_RAIL, Material.POWERED_RAIL -> {
+                Minecarts.stopFly(minecart);
+                yield false;
+            }
+            default -> {
                 Minecarts.landing(minecart, speed);
-                return true;
-        }
+                yield true;
+            }
+        };
     }
     public static void landing(Minecart minecart, double speed){
-        minecart.setFlyingVelocityMod(flyingVelocityMod_land);
-        if(speed > TO_FLY){
-            Minecarts.startFly(minecart, speed);
-        }
-        else if(speed < TO_FALL){
-            Minecarts.stopFly(minecart);
-        }
+        //加一点延迟 避免先于可能的碰撞触发导致碰撞不触发坠机
+        new BukkitRunnable(){
+            @Override
+            public void run(){
+                minecart.setFlyingVelocityMod(flyingVelocityMod_land);
+                if(speed > TO_FLY){
+                    Minecarts.startFly(minecart, speed);
+                }
+                else if(speed < TO_FALL){
+                    Minecarts.stopFly(minecart);
+                }
+            }
+        }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 5);
     }
+
     public static void flyControl(Minecart minecart){
         if(!(minecart.getPassengers().get(0) instanceof Player player)) return;
         if(player.getInventory().getItemInMainHand().getType() != Minecarts.CONTROL_ITEM) return;
 
-        Location location = player.getLocation();
-        float yaw = (location.getYaw() + 180) % 360; //偏航角 180南z+ 270西x- +-360北z- 90东x+
-        float pitch = location.getPitch(); //俯仰角 正数俯角负数仰角
+        var location = player.getLocation();
+        var yaw = (location.getYaw() + 180) % 360; //偏航角 180南z+ 270西x- +-360北z- 90东x+
+        var pitch = location.getPitch(); //俯仰角 正数俯角负数仰角
 
-        Vector vector = minecart.getVelocity();
+        var velocity = minecart.getVelocity();
 
         if(EAST - ANGLE_SQUARE <= yaw && yaw <= EAST + ANGLE_SQUARE){
             //x+
-            vector.setX(vector.getX() + (ANGLE_SQUARE - Math.abs(yaw - EAST)) * CHANGE_SQUARE);
+            velocity.setX(velocity.getX() + (ANGLE_SQUARE - Math.abs(yaw - EAST)) * CHANGE_SQUARE);
         }
         if(SOUTH - ANGLE_SQUARE <= yaw && yaw <= SOUTH + ANGLE_SQUARE){
             //z+
-            vector.setZ(vector.getZ() + (ANGLE_SQUARE - Math.abs(yaw - SOUTH)) * CHANGE_SQUARE);
+            velocity.setZ(velocity.getZ() + (ANGLE_SQUARE - Math.abs(yaw - SOUTH)) * CHANGE_SQUARE);
         }
         if(WEST - ANGLE_SQUARE <= yaw && yaw <= WEST + ANGLE_SQUARE){
             //x-
-            vector.setX(vector.getX() - (ANGLE_SQUARE - Math.abs(yaw - WEST)) * CHANGE_SQUARE);
+            velocity.setX(velocity.getX() - (ANGLE_SQUARE - Math.abs(yaw - WEST)) * CHANGE_SQUARE);
         }
         if((NORTH - ANGLE_SQUARE <= yaw && yaw <= NORTH) || (0 <= yaw && yaw <= 0 + ANGLE_SQUARE)){
             //z-
-            vector.setZ(vector.getZ() - (ANGLE_SQUARE - Math.min(Math.abs(yaw - NORTH), Math.abs(yaw - 0))) * CHANGE_SQUARE);
+            velocity.setZ(velocity.getZ() - (ANGLE_SQUARE - Math.min(Math.abs(yaw - NORTH), Math.abs(yaw - 0))) * CHANGE_SQUARE);
         }
 
-        if(vector.getY() > 0){
+        if(velocity.getY() > 0){
             //上飞
             minecart.setFlyingVelocityMod(Minecarts.flyingVelocityMod_up);
         }else{
             //下飞
             minecart.setFlyingVelocityMod(Minecarts.flyingVelocityMod_down);
         }
-        vector.setY(vector.getY() - pitch * CHANGE_HEIGHT);//负数仰角加，正数俯角减
+        velocity.setY(velocity.getY() - pitch * CHANGE_HEIGHT);//负数仰角加，正数俯角减
 
-        minecart.setVelocity(vector);
+        minecart.setVelocity(velocity);
     }
 
     private static void minecartExplosionAnimation(Minecart minecart){
@@ -247,10 +261,10 @@ public class Minecarts {
             public void run(){
                 for(Entity entity : minecart.getPassengers()){
                     if(entity instanceof Damageable eneity_damageable){
-                        Vector vector = minecart.getVelocity();
-                        double x = Math.abs(vector.getX());
-                        double y = Math.abs(vector.getY());
-                        double z = Math.abs(vector.getZ());
+                        var velocity = minecart.getVelocity();
+                        double x = Math.abs(velocity.getX());
+                        double y = Math.abs(velocity.getY());
+                        double z = Math.abs(velocity.getZ());
                         eneity_damageable.damage(10 * Math.max(Math.max(x, z), y));
                         eneity_damageable.setFireTicks(100);
                     }
@@ -264,28 +278,28 @@ public class Minecarts {
     }
 
     public static void entityCrushed(Minecart minecart, Entity entity){
-        Vector vector = minecart.getVelocity();
-        entity.setVelocity(vector.setY(Math.abs(vector.getY()) + 1).multiply(2));
+        var velocity = minecart.getVelocity();
+        entity.setVelocity(velocity.setY(Math.abs(velocity.getY()) + 1).multiply(2));
     }
     public static void minecartCrushed(Minecart minecart, Minecart minecart_crushed){
-        Vector vector = minecart.getVelocity();
+        var velocity = minecart.getVelocity();
         minecart_crushed.setMaxSpeed(
                 Math.max(
                     minecart_crushed.getMaxSpeed(),
                     2 * Math.max(
                             Math.max(
-                                    Math.abs(vector.getX()),
-                                    Math.abs(vector.getZ())
+                                    Math.abs(velocity.getX()),
+                                    Math.abs(velocity.getZ())
                             ),
-                          Math.abs(vector.getY())
+                          Math.abs(velocity.getY())
                     )
                 )
         );
-        minecart_crushed.setVelocity(vector.multiply(2));
+        minecart_crushed.setVelocity(velocity.multiply(2));
     }
     public static void livingEntityCrushed(Minecart minecart, LivingEntity livingEntity){
-        Vector vector = minecart.getVelocity();
-        livingEntity.setVelocity(vector.setY(Math.abs(vector.getY()) + 1).multiply(2));
+        var velocity = minecart.getVelocity();
+        livingEntity.setVelocity(velocity.setY(Math.abs(velocity.getY()) + 1).multiply(2));
         livingEntity.addPotionEffect(new PotionEffect(
                 PotionEffectType.WEAKNESS,
                 200, 3, false
