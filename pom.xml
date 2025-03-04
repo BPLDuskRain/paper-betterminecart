@@ -6,7 +6,7 @@
 
     <groupId>com.duskrainfall</groupId>
     <artifactId>betterminecart</artifactId>
-    <version>1.5.2-SNAPSHOT</version>
+    <version>1.6-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>BetterMinecart</name>
@@ -45,6 +45,9 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>betterminecart-mybatis-config.xml</exclude>
+                </excludes>
                 <filtering>true</filtering>
             </resource>
         </resources>
@@ -67,6 +70,18 @@
             <artifactId>paper-api</artifactId>
             <version>1.21-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis</artifactId>
+            <version>3.5.10</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <version>8.2.0</version>
         </dependency>
     </dependencies>
 </project>

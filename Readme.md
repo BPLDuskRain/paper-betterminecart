@@ -85,13 +85,14 @@ Author: DuskRainFall
   - 潮涌能量`CONDUIT_POWER`（仅水中）
   - 以及时间不定的反胃（模拟眩晕）`NAUSEA`效果（仅水中）
 - 温泉水具有`CLOUD`、`WHITE_SMOKE`、`BUBBLE`粒子效果
-- OP位于水中时可向水中丢弃火焰弹`FIRE_CHARGE`
-  - 以火焰弹爆裂点为中心创建一片无限时间的标准大小温泉水域
+- 玩家位于水中时可向水中丢弃火焰弹`FIRE_CHARGE`
+  - 以火焰弹爆裂点为中心创建一片无限时间的标准大小温泉水域（OP权限生效）
   - 火焰弹爆裂时，出现`BLOCK_LAVA_EXTINGUISH`音效和`FLAME`粒子效果
-- OP位于水中时可向水中丢弃雪球`SNOWBALL`
-  - 以雪球爆裂点为中心移除一片标准大小温泉水域
+- 玩家位于水中时可向水中丢弃雪球`SNOWBALL`
+  - 以雪球爆裂点为中心移除一片标准大小温泉水域（OP权限生效）
   - 雪球爆裂时，出现`BLOCK_SNOW_STEP`音效和`SNOWFLAKE`粒子效果
 - 矿车在水上`坠机`时，以坠机点为中心创建一片持续时间为`1200`游戏刻的标准大小温泉水域
+- 由火焰弹生成的温泉会在开启持久化后保存温泉方块到指定的数据库，而矿车的不会
 ## 侵入物品
 - 矿车 `MINECART` 实体
   - 玩家乘坐时
@@ -103,3 +104,53 @@ Author: DuskRainFall
 - 雪球`SNOWBALL` 掉落物
 ## 注意事项
 - 速度超过一定值后（不小于0.4格每刻），转弯会脱轨，可进入滑翔状态但不推荐（脱轨时机和方向不定）
+## 温泉持久化说明
+- 使用`MySQL`作为数据库管理系统，`MyBatis`作为持久层框架
+- 正确放置配置文件将开启温泉持久化功能，否则不会启用
+### 数据库表结构
+本表保存一个单独服务器的温泉方块，多服务器集群需要分别部署数据库表、配置文件和插件本体
+```SQL
+--字符集和比较依据可自选
+CREATE TABLE `数据库表名`  (
+  `id` bigint NOT NULL,
+  `world` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `x` double NOT NULL,
+  `y` double NOT NULL,
+  `z` double NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+)
+--主键不要选择自增，自增操作在后端完成
+```
+### MyBatis配置
+- 配置文件`betterminecart-mybatis-config.xml`内容应该如下，中文内容需要修改为对应的参数
+- 本文件并应与插件.jar包位于同一文件夹下
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <properties>
+        <property name="tableName" value="数据库表名"/>
+    </properties>
+    <!-- 配置环境 -->
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql://数据库主机:数据库端口/数据库名?useSSL=false&amp;serverTimezone=UTC"/>
+                <property name="username" value="用户名"/>
+                <property name="password" value="密码"/>
+            </dataSource>
+
+        </environment>
+    </environments>
+
+    <!-- 加载映射文件 -->
+    <mappers>
+        <mapper resource="mapper/SpringBlocksMapper.xml"/>
+    </mappers>
+
+</configuration>
+```

@@ -1,12 +1,14 @@
 package com.duskrainfall.betterminecart.spring;
 
 import com.duskrainfall.betterminecart.BetterMinecart;
+import com.duskrainfall.betterminecart.mapper.SpringBlocksMapper;
+import com.duskrainfall.betterminecart.records.SpringBlock;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.plugin.Plugin;
@@ -15,13 +17,17 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;
 
 public class Springs {
     private final static HashSet<Location> los = new HashSet<>();
-    private final static int RADIUS = 5;
+    private final static int CREATE_RADIUS = 5;
+    private final static int REMOVE_RADIUS = 10;
     //    private final static long CONTINUE_TIME = 60000L;
     private final static Plugin plugin = JavaPlugin.getPlugin(BetterMinecart.class);
 
@@ -37,9 +43,10 @@ public class Springs {
         );
     }
     private static void addSpringBlocks(Block centreBlock){
-        for(int x = -RADIUS; x <= RADIUS; ++x){
-            for(int y = 0; y <= RADIUS; ++y){
-                for(int z = -RADIUS; z <= RADIUS; ++z){
+        changed = true;
+        for(int x = -CREATE_RADIUS; x <= CREATE_RADIUS; ++x){
+            for(int y = 0; y <= CREATE_RADIUS; ++y){
+                for(int z = -CREATE_RADIUS; z <= CREATE_RADIUS; ++z){
                     Location location = centreBlock.getLocation().clone().add(x, y, z);
                     if(location.getBlock().getType() == Material.WATER){
                         los.add(location);
@@ -61,9 +68,10 @@ public class Springs {
         );
     }
     private static void delSpringBlocks(Block centreBlock){
-        for(int x = -RADIUS; x <= RADIUS; ++x){
-            for(int y = 0; y <= RADIUS; ++y){
-                for(int z = -RADIUS; z <= RADIUS; ++z){
+        changed = true;
+        for(int x = -REMOVE_RADIUS; x <= REMOVE_RADIUS; ++x){
+            for(int y = -REMOVE_RADIUS; y <= REMOVE_RADIUS; ++y){
+                for(int z = -REMOVE_RADIUS; z <= REMOVE_RADIUS; ++z){
                     Location location = centreBlock.getLocation().clone().add(x, y, z);
                     if(location.getBlock().getType() == Material.WATER){
                         los.remove(location);
@@ -73,17 +81,22 @@ public class Springs {
         }
     }
 
+    public final static ArrayList<BukkitRunnable> tasks = new ArrayList<>();
+
     // 创建区域
     public static void createSpring(Entity entity, long duration){
         createSpringAnimation(entity);
         Block centreBlock = entity.getLocation().getBlock();
         addSpringBlocks(centreBlock);
-        new BukkitRunnable(){
+        var task = new BukkitRunnable(){
             @Override
             public void run(){
                 delSpringBlocks(centreBlock);
+                tasks.remove(this);
             }
-        }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), duration);
+        };
+        tasks.add(task);
+        task.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), duration);
     }
     public static void createSpring(Entity entity, Player player) {
         new BukkitRunnable() {
@@ -110,7 +123,7 @@ public class Springs {
         }.runTaskLater(plugin, 20);
     }
 
-    // 移除区域-Item
+    // 移除区域
     public static void removeSpring(Entity entity, Player player){
         new BukkitRunnable(){
             @Override
@@ -210,4 +223,56 @@ public class Springs {
         }.runTaskTimer(plugin, 0, 20 + random.nextInt(60));
     }
 
+    //温泉持久化
+    public static boolean canSaved = true;
+    public static SqlSessionFactory sqlSessionFactory;
+    static {
+        try {
+            sqlSessionFactory = new SqlSessionFactoryBuilder()
+                    .build(new FileInputStream("plugins/betterminecart-mybatis-config.xml"));
+        } catch (IOException e) {
+            canSaved = false;
+        }
+    }
+
+    public static Location toLocation(SpringBlock springBlock){
+        return new Location(
+                Bukkit.getWorld(springBlock.world()),
+                springBlock.x(),
+                springBlock.y(),
+                springBlock.z()
+                );
+    }
+    public static void readBlocks(){
+        if(!canSaved) return;
+        try(SqlSession session = sqlSessionFactory.openSession(true)){
+            SpringBlocksMapper springBlocksMapper = session.getMapper(SpringBlocksMapper.class);
+            for(var block : springBlocksMapper.getBlocks()){
+                los.add(toLocation(block));
+            }
+        }
+    }
+
+    private static long count= 1;
+    public static SpringBlock toSpringBlock(Location location){
+        return new SpringBlock(
+                count++,
+                location.getWorld().getName(),
+                location.getX(),
+                location.getY(),
+                location.getZ()
+        );
+    }
+    public static boolean changed = false;
+    public static void writeBlocks(){
+        if(!canSaved) return;
+        if(!changed) return;
+        try(SqlSession session = sqlSessionFactory.openSession(true)){
+            SpringBlocksMapper springBlocksMapper = session.getMapper(SpringBlocksMapper.class);
+            springBlocksMapper.clear();
+            for(var lo : los){
+                springBlocksMapper.insertBlock(toSpringBlock(lo));
+            }
+        }
+    }
 }

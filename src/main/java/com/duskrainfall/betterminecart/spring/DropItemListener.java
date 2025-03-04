@@ -2,6 +2,7 @@ package com.duskrainfall.betterminecart.spring;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -21,9 +22,9 @@ public class DropItemListener implements Listener {
     @EventHandler
     public void whenDropping(PlayerDropItemEvent e) {
         Player player =  e.getPlayer();
-        if(!player.isInWater()){
-            return;
-        }
+        if(player.getWorld() == Bukkit.getWorld("world_nether")) return;
+        if(!player.isInWater()) return;
+
         Item item =  e.getItemDrop();
         switch (item.getItemStack().getType()){
             case Material.FIRE_CHARGE:
