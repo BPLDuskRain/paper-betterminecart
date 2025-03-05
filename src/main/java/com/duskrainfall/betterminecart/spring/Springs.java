@@ -6,8 +6,6 @@ import com.duskrainfall.betterminecart.records.SpringBlock;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.apache.ibatis.session.SqlSession;
-import org.apache.ibatis.session.SqlSessionFactory;
-import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.*;
@@ -17,8 +15,6 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -224,17 +220,6 @@ public class Springs {
     }
 
     //温泉持久化
-    public static boolean canSaved = true;
-    public static SqlSessionFactory sqlSessionFactory;
-    static {
-        try {
-            sqlSessionFactory = new SqlSessionFactoryBuilder()
-                    .build(new FileInputStream("plugins/betterminecart-mybatis-config.xml"));
-        } catch (IOException e) {
-            canSaved = false;
-        }
-    }
-
     public static Location toLocation(SpringBlock springBlock){
         return new Location(
                 Bukkit.getWorld(springBlock.world()),
@@ -244,8 +229,8 @@ public class Springs {
                 );
     }
     public static void readBlocks(){
-        if(!canSaved) return;
-        try(SqlSession session = sqlSessionFactory.openSession(true)){
+        if(!BetterMinecart.canSaved) return;
+        try(SqlSession session = BetterMinecart.sqlSessionFactory.openSession(true)){
             SpringBlocksMapper springBlocksMapper = session.getMapper(SpringBlocksMapper.class);
             for(var block : springBlocksMapper.getBlocks()){
                 los.add(toLocation(block));
@@ -265,9 +250,9 @@ public class Springs {
     }
     public static boolean changed = false;
     public static void writeBlocks(){
-        if(!canSaved) return;
+        if(!BetterMinecart.canSaved) return;
         if(!changed) return;
-        try(SqlSession session = sqlSessionFactory.openSession(true)){
+        try(SqlSession session = BetterMinecart.sqlSessionFactory.openSession(true)){
             SpringBlocksMapper springBlocksMapper = session.getMapper(SpringBlocksMapper.class);
             springBlocksMapper.clear();
             for(var lo : los){

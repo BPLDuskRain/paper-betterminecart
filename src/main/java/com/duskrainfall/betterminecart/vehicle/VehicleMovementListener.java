@@ -128,7 +128,7 @@ public class VehicleMovementListener implements Listener {
         Vehicle vehicle = e.getVehicle();
         if(vehicle.isEmpty()) return;
         if(!(vehicle instanceof Minecart minecart)) return;
-        if(!(vehicle.getPassengers().get(0) instanceof Player)) return;
+        if(!(minecart.getPassengers().get(0) instanceof Player)) return;
 
         if(!minecart.getDerailedVelocityMod().equals(Minecarts.derailedVelocityMod)){
             minecart.setDerailedVelocityMod(Minecarts.derailedVelocityMod);

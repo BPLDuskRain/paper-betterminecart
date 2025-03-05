@@ -1,16 +1,43 @@
 package com.duskrainfall.betterminecart;
 
+import com.duskrainfall.betterminecart.records.SpringBlock;
 import com.duskrainfall.betterminecart.spring.DropItemListener;
 import com.duskrainfall.betterminecart.spring.Springs;
+import com.duskrainfall.betterminecart.tools.SqlGenerator;
 import com.duskrainfall.betterminecart.vehicle.*;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.logging.Level;
 
 public final class BetterMinecart extends JavaPlugin {
+    public static boolean canSaved = true;
+    public static SqlSessionFactory sqlSessionFactory;
+    static {
+        try {
+            sqlSessionFactory = new SqlSessionFactoryBuilder()
+                    .build(new FileInputStream("plugins/betterminecart-mybatis-config.xml"));
+            try (SqlSession session = sqlSessionFactory.openSession(true)) {
+                String sql = SqlGenerator.generateCreateTableSQL(SpringBlock.class, session);
+                try(Statement statement = session.getConnection().createStatement()){
+                    statement.execute(sql);
+                }catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } catch (IOException e) {
+            canSaved = false;
+        }
+    }
 
     @Override
     public void onEnable() {
@@ -27,7 +54,7 @@ public final class BetterMinecart extends JavaPlugin {
         DropItemListener dropItemListener =  new DropItemListener();
         pluginManager.registerEvents(dropItemListener, this);
 
-        if(Springs.canSaved){
+        if(canSaved){
             Springs.readBlocks();
             getLogger().log(Level.INFO, "温泉方块已读取");
         }else{
@@ -39,7 +66,7 @@ public final class BetterMinecart extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
-        if(Springs.canSaved){
+        if(canSaved){
             for(int i = 0; i < Springs.tasks.size(); ++i){
                 var task = Springs.tasks.get(i);
                 if(task != null) {
