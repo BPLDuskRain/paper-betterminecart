@@ -1,8 +1,9 @@
 package com.duskrainfall.betterminecart.spring;
 
 import com.duskrainfall.betterminecart.BetterMinecart;
+import com.duskrainfall.betterminecart.bean.SpringBlock_Data;
 import com.duskrainfall.betterminecart.mapper.SpringBlocksMapper;
-import com.duskrainfall.betterminecart.records.SpringBlock;
+import com.duskrainfall.betterminecart.tools.DataSaver;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.apache.ibatis.session.SqlSession;
@@ -15,6 +16,12 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -220,44 +227,63 @@ public class Springs {
     }
 
     //温泉持久化
-    public static Location toLocation(SpringBlock springBlock){
-        return new Location(
-                Bukkit.getWorld(springBlock.world()),
-                springBlock.x(),
-                springBlock.y(),
-                springBlock.z()
-                );
-    }
-    public static void readBlocks(){
-        if(!BetterMinecart.canSaved) return;
-        try(SqlSession session = BetterMinecart.sqlSessionFactory.openSession(true)){
-            SpringBlocksMapper springBlocksMapper = session.getMapper(SpringBlocksMapper.class);
-            for(var block : springBlocksMapper.getBlocks()){
-                los.add(toLocation(block));
-            }
+    public static void readBlocks(String saveType){
+        switch (saveType){
+            case "null": return;
+            case "data":
+                File file = new File(BetterMinecart.PLUGIN_PATH + '/' + BetterMinecart.PLUGIN_DAT);
+                if(!(file.exists() && file.length() > 0)) return;
+
+                Path path = Path.of(BetterMinecart.PLUGIN_PATH + '/' + BetterMinecart.PLUGIN_DAT);
+
+                try (ObjectInputStream inputStream = new ObjectInputStream(
+                        Files.newInputStream(path)
+                )) {
+                    DataSaver.addToSet((ArrayList<SpringBlock_Data>) inputStream.readObject(), los);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+                break;
+            case "mysql":
+                try(SqlSession session = BetterMinecart.sqlSessionFactory.openSession(true)){
+                    SpringBlocksMapper springBlocksMapper = session.getMapper(SpringBlocksMapper.class);
+                    for(var block : springBlocksMapper.getBlocks()){
+                        los.add(DataSaver.toLocation(block));
+                    }
+                }
+                break;
         }
     }
 
-    private static long count= 1;
-    public static SpringBlock toSpringBlock(Location location){
-        return new SpringBlock(
-                count++,
-                location.getWorld().getName(),
-                location.getX(),
-                location.getY(),
-                location.getZ()
-        );
-    }
     public static boolean changed = false;
-    public static void writeBlocks(){
-        if(!BetterMinecart.canSaved) return;
+    public static void writeBlocks(String saveType){
         if(!changed) return;
-        try(SqlSession session = BetterMinecart.sqlSessionFactory.openSession(true)){
-            SpringBlocksMapper springBlocksMapper = session.getMapper(SpringBlocksMapper.class);
-            springBlocksMapper.clear();
-            for(var lo : los){
-                springBlocksMapper.insertBlock(toSpringBlock(lo));
-            }
+        switch(saveType){
+            case "null": return;
+            case "data":
+                Path path = Path.of(BetterMinecart.PLUGIN_PATH + '/' + BetterMinecart.PLUGIN_DAT);
+                DataSaver.touch(path);
+
+                try (ObjectOutputStream outputStream = new ObjectOutputStream(
+                        Files.newOutputStream(path)
+                )) {
+                    outputStream.writeObject(DataSaver.toList(los));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+                break;
+            case "mysql":
+                try(SqlSession session = BetterMinecart.sqlSessionFactory.openSession(true)){
+                    SpringBlocksMapper springBlocksMapper = session.getMapper(SpringBlocksMapper.class);
+                    springBlocksMapper.clear();
+                    for(var lo : los){
+                        springBlocksMapper.insertBlock(DataSaver.toSpringBlock_Table(lo));
+                    }
+                }
+                break;
         }
     }
 }

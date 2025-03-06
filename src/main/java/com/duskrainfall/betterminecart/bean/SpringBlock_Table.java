@@ -1,10 +1,10 @@
-package com.duskrainfall.betterminecart.records;
+package com.duskrainfall.betterminecart.bean;
 
 import com.duskrainfall.betterminecart.annotation.Col;
 import com.duskrainfall.betterminecart.annotation.Table;
 
 @Table("tableName")
-public record SpringBlock(
+public record SpringBlock_Table(
    @Col(name = "id", type = "bigint", constraint = "PRIMARY KEY")
    long id,
    @Col(name = "world", type = "varchar(20)", constraint = "NOT NULL")

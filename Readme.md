@@ -117,10 +117,24 @@ Thanks to
 - 火焰弹`FIRE_CHARGE` 掉落物
 - 雪球`SNOWBALL` 掉落物
 ## 温泉持久化说明
-- 使用`MySQL`作为数据库管理系统，`MyBatis`作为持久层框架
-- 正确放置配置文件将开启温泉持久化功能，否则不会启用
+在启动一次后，会在插件同级的插件同名文件夹下创建`.properties`文件
+```properties
+#不启用持久化
+#savetype=null
+
+#使用本地.dat序列化保存
+#savetype=data
+
+#使用mysql数据库保存
+#savetype=mysql
+```
+- 默认`null`不保存
+- `data`：使用POJO序列化直接将温泉方块列表保存到该文件同级`.dat`文件中
+  - 高速保存，占用空间小，仅本地
+- `mysql`：使用`MySQL`作为数据库管理系统，`MyBatis`作为持久层框架，可本地/远程数据库保存
+  - 保存缓慢，占用空间较大，可远程
 ### 数据库表结构
-本表保存一个单独服务器的温泉方块，多服务器集群需要分别部署数据库表、配置文件和插件本体
+本表保存一个单独服务器的温泉方块
 ```SQL
 --主键不要选择自增，自增操作在后端完成
 CREATE TABLE `数据库表名` (
@@ -132,8 +146,8 @@ CREATE TABLE `数据库表名` (
 )
 ```
 ### MyBatis配置
+- 该配置文件将在启动一次后自动在插件同级的插件同名文件夹下创建模板
 - 配置文件`betterminecart-mybatis-config.xml`内容应该如下，中文内容需要修改为对应的参数
-- 本文件应与插件.jar包位于同一文件夹下
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE configuration
@@ -164,8 +178,6 @@ CREATE TABLE `数据库表名` (
 
 </configuration>
 ```
-修改`<property name="tableName" value="数据库表名"/>`后，程序第一次成功读取配置文件可以直接在指定的MySQL数据库生成指定的表名的数据库表
-
 请务必注意不要填入和已有表名重复的值
 ## 测试相关
 以下为测试中希望出现的情景
@@ -380,16 +392,25 @@ CREATE TABLE `数据库表名` (
 + 
 ### 插件
 + 在插件加载时
-  + 尝试加载配置文件`betterminecart-mybatis-config.xml`
-    + 配置文件正常
-      + 数据库表不存在：根据配置的表名自动创建数据库表
-      + 数据库表存在：可以从对应数据库正确读出温泉方块
-    - 配置文件不存在/格式异常/数据异常：不启用温泉方块持久化
+  + 尝试在插件同路径下创建`betterminecart`文件夹
+    + 尝试初始化`betterminecart.properties`文件
+    + 尝试初始化`betterminecart-mybatis-config.xml`文件模板
+  + 检查`betterminecart.properties`中`savetype`的值
+    - `null`持久化不生效
+    + `data`启用`.dat`本地存储
+      + 尝试从`betterminecart.dat`中反序列化对象
+    + `mysql`启用数据库存储
+      + 尝试加载配置文件`betterminecart-mybatis-config.xml`
+        + 配置文件正常
+          + 数据库表不存在：尝试根据配置的表名自动创建数据库表
+          + 数据库表存在：可以从对应数据库正确读出温泉方块
+        - 配置文件不存在/格式异常/数据异常：报错
   + 温泉方块开始产生模拟温泉的粒子
 + 在插件卸载时
   + 若启用温泉方块持久化
     + 遍历限时温泉列表，依次强制移除
-    + 保存温泉方块到对应数据库
+    + 对于`data`：尝试创建`.dat`文件并保存
+    + 对于`mysql`：保存温泉方块到对应数据库
 ### 对于原版的侵入控制
 尽量做到，但难以保证
 

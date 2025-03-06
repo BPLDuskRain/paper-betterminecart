@@ -1,5 +1,5 @@
 name: betterminecart
-version: '1.6.1-SNAPSHOT'
+version: '1.6.2-SNAPSHOT'
 main: com.duskrainfall.betterminecart.BetterMinecart
 api-version: '1.21'
 commands:
@@ -14,7 +14,7 @@ commands:
     aliases: ve
 permissions:
   spring.create:
-    description: 允许玩家创建温泉。
+    description: 允许玩家创建温泉
     default: op
   spring.remove:
     description: 允许玩家移除温泉
