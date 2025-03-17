@@ -1,7 +1,7 @@
 package com.duskrainfall.betterminecart.vehicle;
 
-import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.minecart.RideableMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -17,7 +17,7 @@ public class DriveListener implements Listener {
 
         if(item_main.getType() != Minecarts.CONTROL_ITEM) return; //必须手持对应物品
         if(!player.isInsideVehicle()) return; //必须在载具内
-        if(!(player.getVehicle() instanceof Minecart minecart)) return; //载具必须是矿车
+        if(!(player.getVehicle() instanceof RideableMinecart minecart)) return; //载具必须是矿车
         //左击加速，右击空气减速
         switch(e.getAction()){
             case Action.LEFT_CLICK_AIR:

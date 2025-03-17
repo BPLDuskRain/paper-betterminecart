@@ -6,6 +6,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.entity.*;
+import org.bukkit.entity.minecart.RideableMinecart;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
@@ -15,6 +16,8 @@ import org.bukkit.util.Vector;
 
 public class Minecarts {
     public final static Material CONTROL_ITEM = Material.RECOVERY_COMPASS;
+
+    public final static int LISTEN_GAP = 20;
 
     public final static double MAX = 1.6d;
     public final static double MAX_RAIL = 1.5d;
@@ -33,11 +36,12 @@ public class Minecarts {
     public final static float NORTH = 360f;
 
     public final static Vector flyingVelocityMod_ori = new Vector(0.95d, 0.95d, 0.95d);
+    public final static Vector flyingVelocityMod_init = new Vector(0.995d, 1.0d, 0.995d);
     public final static Vector flyingVelocityMod_down = new Vector(0.995d, 1.001d, 0.995d);
     public final static Vector flyingVelocityMod_up = new Vector(0.995d, 0.99d, 0.995d);
     public final static Vector flyingVelocityMod_land = new Vector(0.99d, 0.8d, 0.99d);
 
-    public final static Vector derailedVelocityMod = new Vector(0.75d, 0.75d, 0.75d);
+    public final static Vector derailedVelocityMod = new Vector(0.9d, 0.9d, 0.9d);
 
     private static void maxSpeedUpAnimation(Minecart minecart){
         minecart.getWorld().spawnParticle(
@@ -113,6 +117,13 @@ public class Minecarts {
         double z = Math.abs(from.getZ() - to.getZ());
         return Math.sqrt(x*x+y*y+z*z);
     }
+    public static double getSquaredSpeed(VehicleMoveEvent e){
+        Location from = e.getFrom();
+        Location to = e.getTo();
+        double x = Math.abs(from.getX() - to.getX());
+        double z = Math.abs(from.getZ() - to.getZ());
+        return Math.sqrt(x*x+z*z);
+    }
     public static Vector getVelocity(VehicleMoveEvent e){
         Location from = e.getFrom();
         Location to = e.getTo();
@@ -140,12 +151,12 @@ public class Minecarts {
         }
     }
     public static void startFly(Minecart minecart, double speed){
-        var delay = Math.round(5 / speed);
+        var delay = Math.round(10 / speed);
         new BukkitRunnable(){
             @Override
             public void run(){
                 minecart.setGravity(false);
-                minecart.setFlyingVelocityMod(flyingVelocityMod_down);
+                minecart.setFlyingVelocityMod(flyingVelocityMod_init);
             }
         }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), delay);
     }
@@ -191,6 +202,8 @@ public class Minecarts {
         };
     }
     public static void landing(Minecart minecart, double speed){
+        minecart.setFallDistance(0);// 对于坐在矿车上摔落的情况，是按照矿车掉落高度计算
+        //minecart.getPassengers().get(0).setFallDistance(0);
         //加一点延迟 避免先于可能的碰撞触发导致碰撞不触发坠机
         new BukkitRunnable(){
             @Override
@@ -203,7 +216,7 @@ public class Minecarts {
                     Minecarts.stopFly(minecart);
                 }
             }
-        }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 5);
+        }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 2);
     }
 
     public static void flyControl(Minecart minecart){
@@ -233,13 +246,6 @@ public class Minecarts {
             velocity.setZ(velocity.getZ() - (ANGLE_SQUARE - Math.min(Math.abs(yaw - NORTH), Math.abs(yaw - 0))) * CHANGE_SQUARE);
         }
 
-        if(velocity.getY() > 0){
-            //上飞
-            minecart.setFlyingVelocityMod(Minecarts.flyingVelocityMod_up);
-        }else{
-            //下飞
-            minecart.setFlyingVelocityMod(Minecarts.flyingVelocityMod_down);
-        }
         velocity.setY(velocity.getY() - pitch * CHANGE_HEIGHT);//负数仰角加，正数俯角减
 
         minecart.setVelocity(velocity);
@@ -266,7 +272,7 @@ public class Minecarts {
                         double y = Math.abs(velocity.getY());
                         double z = Math.abs(velocity.getZ());
                         eneity_damageable.damage(10 * Math.max(Math.max(x, z), y));
-                        eneity_damageable.setFireTicks(100);
+                        eneity_damageable.setFireTicks(120);
                     }
                 }
                 minecart.eject();
@@ -284,22 +290,31 @@ public class Minecarts {
     public static void minecartCrushed(Minecart minecart, Minecart minecart_crushed){
         var velocity = minecart.getVelocity();
         minecart_crushed.setMaxSpeed(
+            Math.min(
                 Math.max(
                     minecart_crushed.getMaxSpeed(),
                     2 * Math.max(
-                            Math.max(
-                                    Math.abs(velocity.getX()),
-                                    Math.abs(velocity.getZ())
-                            ),
-                          Math.abs(velocity.getY())
+                        Math.max(
+                            Math.abs(velocity.getX()),
+                            Math.abs(velocity.getZ())
+                        ),
+                        Math.abs(velocity.getY())
                     )
-                )
+                ),
+                MAX * 2
+            )
         );
-        minecart_crushed.setVelocity(velocity.multiply(2));
+        if(minecart_crushed instanceof RideableMinecart){
+            if(minecart_crushed.isEmpty() || !(minecart_crushed.getPassengers().get(0) instanceof Player)) {
+                minecart_crushed.setVelocity(velocity.multiply(2));
+            }
+        }
     }
     public static void livingEntityCrushed(Minecart minecart, LivingEntity livingEntity){
         var velocity = minecart.getVelocity();
-        livingEntity.setVelocity(velocity.setY(Math.abs(velocity.getY()) + 1).multiply(2));
+        if(livingEntity.getType() != EntityType.IRON_GOLEM){
+            livingEntity.setVelocity(velocity.setY(Math.abs(velocity.getY()) + 1).multiply(2));
+        }
         livingEntity.addPotionEffect(new PotionEffect(
                 PotionEffectType.WEAKNESS,
                 200, 3, false
