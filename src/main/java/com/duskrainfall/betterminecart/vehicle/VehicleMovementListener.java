@@ -1,6 +1,7 @@
 package com.duskrainfall.betterminecart.vehicle;
 
 import com.duskrainfall.betterminecart.BetterMinecart;
+import net.kyori.adventure.sound.SoundStop;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Sound;
@@ -10,6 +11,7 @@ import org.bukkit.entity.Vehicle;
 import org.bukkit.entity.minecart.RideableMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -83,6 +85,13 @@ public class VehicleMovementListener implements Listener {
         ));
     }
 
+    @EventHandler
+    public void destroyVehicle(VehicleDestroyEvent e){
+        Vehicle vehicle = e.getVehicle();
+        if(!(vehicle instanceof RideableMinecart minecart)) return;
+        Minecarts.soundCds.remove(minecart);
+    }
+
     int count = 0;
     @EventHandler
     public void onVehicle_speed(VehicleMoveEvent e){
@@ -106,12 +115,12 @@ public class VehicleMovementListener implements Listener {
         }
 
         //获取乘客
-        List<Entity> passengers = vehicle.getPassengers();
+        List<Entity> passengers = minecart.getPassengers();
         for(Entity passenger : passengers){
             if(!(passenger instanceof Player player)){
                 continue;
             }
-            player.sendActionBar(Component.text("当前速率/各向速率为 "
+            player.sendActionBar(Component.text("当前速率/平面速率为 "
                     + String.format("%.2f", squaredSpeed) + '/'
                     + String.format("%.2f", speed) + '('
                     + String.format("%.2f", velocity.getX()) + ' '
@@ -119,18 +128,33 @@ public class VehicleMovementListener implements Listener {
                     + String.format("%.2f", velocity.getZ()) + ')'
                     + " block/tick "
                     , NamedTextColor.GREEN));
-            if(!vehicle.hasGravity() && squaredSpeed < Minecarts.TO_FALL + 0.2d){
-                new BukkitRunnable(){
-                    @Override
-                    public void run(){
-                        player.sendActionBar(Component.text("您即将失速 PULL UP!", NamedTextColor.DARK_RED));
-                        player.getWorld().playSound(
-                                player.getLocation(),
-                                Sound.BLOCK_BELL_USE,
-                                1.0f, 1.0f
-                        );
-                    }
-                }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), Minecarts.LISTEN_GAP / 4);
+            if(!minecart.hasGravity() && squaredSpeed < Minecarts.TO_FALL + 0.2d){
+                if(minecart.getFlyingVelocityMod().equals(Minecarts.flyingVelocityMod_land)){
+                    new BukkitRunnable(){
+                        @Override
+                        public void run(){
+                            player.sendActionBar(Component.text("您即将降落，请注意", NamedTextColor.AQUA));
+                            player.getWorld().playSound(
+                                    player.getLocation(),
+                                    Sound.ENTITY_BREEZE_SLIDE,
+                                    1.0f, 1.0f
+                            );
+                        }
+                    }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), Minecarts.LISTEN_GAP / 4);
+                }
+                else{
+                    new BukkitRunnable(){
+                        @Override
+                        public void run(){
+                            player.sendActionBar(Component.text("您即将失速 PULL UP!", NamedTextColor.DARK_RED));
+                            player.getWorld().playSound(
+                                    player.getLocation(),
+                                    Sound.BLOCK_BELL_USE,
+                                    1.0f, 1.0f
+                            );
+                        }
+                    }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), Minecarts.LISTEN_GAP / 4);
+                }
             }
         }
     }
@@ -152,6 +176,21 @@ public class VehicleMovementListener implements Listener {
             if(speed > Minecarts.TO_FLY) Minecarts.tryStartFly(minecart, speed);
         }
         else {
+            minecart.getWorld().stopSound(SoundStop.named(Sound.ENTITY_MINECART_INSIDE));
+            if(minecart.isInWater()){
+                minecart.getWorld().playSound(
+                        minecart.getLocation(),
+                        Sound.ENTITY_AXOLOTL_SWIM,
+                        (float) (speed/2), 1.0f
+                );
+            }
+            else{
+                minecart.getWorld().playSound(
+                        minecart.getLocation(),
+                        Sound.ENTITY_BREEZE_IDLE_GROUND,
+                        (float) (speed/2), 0.8f
+                );
+            }
             if (speed < Minecarts.TO_FALL) {
                 //加一点延迟 避免先于可能的碰撞触发导致碰撞不触发坠机
                 new BukkitRunnable(){
@@ -161,18 +200,24 @@ public class VehicleMovementListener implements Listener {
                     }
                 }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 5);
             }
+
             double velocity_y = Minecarts.getVelocity(e).getY();
 
-            if(velocity_y >= 0){
-                //上飞
-                if(!minecart.getFlyingVelocityMod().equals(Minecarts.flyingVelocityMod_up)) {
-                    minecart.setFlyingVelocityMod(Minecarts.flyingVelocityMod_up);
+            if(!minecart.getFlyingVelocityMod().equals(Minecarts.flyingVelocityMod_land)){
+                if(velocity_y >= 0){
+                    //上飞
+                    if(!minecart.getFlyingVelocityMod().equals(Minecarts.flyingVelocityMod_up)) {
+                        minecart.setFlyingVelocityMod(Minecarts.flyingVelocityMod_up);
+                    }
+                }else{
+                    //下飞
+                    if(!minecart.getFlyingVelocityMod().equals(Minecarts.flyingVelocityMod_down)){
+                        minecart.setFlyingVelocityMod(Minecarts.flyingVelocityMod_down);
+                    }
                 }
-            }else{
-                //下飞
-                if(!minecart.getFlyingVelocityMod().equals(Minecarts.flyingVelocityMod_down)){
-                    minecart.setFlyingVelocityMod(Minecarts.flyingVelocityMod_down);
-                }
+            }
+            else{
+                Minecarts.tryStartFly(minecart, speed);
             }
 
             Minecarts.flyControl(minecart);

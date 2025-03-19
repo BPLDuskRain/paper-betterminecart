@@ -206,10 +206,10 @@ public class Springs {
                                         PotionEffectType.CONDUIT_POWER,
                                         200, 0, true
                                 ));
-                                livingEntity.addPotionEffect(new PotionEffect(
-                                        PotionEffectType.NAUSEA,
-                                        40, 0, true, false, false
-                                ));
+//                                livingEntity.addPotionEffect(new PotionEffect(
+//                                        PotionEffectType.NAUSEA,
+//                                        40, 0, true, false, false
+//                                ));
                             }
                             livingEntity.addPotionEffect(new PotionEffect(
                                     PotionEffectType.REGENERATION,
