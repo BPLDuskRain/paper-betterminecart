@@ -1,13 +1,13 @@
-package com.duskrainfall.betterminecart.vehicle;
+package com.duskrainfall.betterminecart.vehicle.minecart;
 
 import com.duskrainfall.betterminecart.BetterMinecart;
-import com.duskrainfall.betterminecart.spring.Springs;
+import com.duskrainfall.betterminecart.vehicle.Vehicles;
+import net.kyori.adventure.sound.SoundStop;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.entity.*;
 import org.bukkit.entity.minecart.RideableMinecart;
-import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -16,11 +16,7 @@ import org.bukkit.util.Vector;
 
 import java.util.HashMap;
 
-public class Minecarts {
-    public final static Material CONTROL_ITEM = Material.RECOVERY_COMPASS;
-
-    public final static int LISTEN_GAP = 20;
-
+public class Minecarts extends Vehicles {
     public final static double MAX = 1.6d;
     public final static double MAX_RAIL = 1.5d;
     public final static double MIN = 0.05d;
@@ -45,6 +41,68 @@ public class Minecarts {
 
     public final static Vector derailedVelocityMod = new Vector(0.9d, 0.9d, 0.9d);
 
+    private final static int CRUSHED_SOUND_CD = 10;
+    public final static HashMap<Minecart, Integer> crushedSoundCds = new HashMap<>();
+    private final static int MOVE_SOUND_CD = 20;
+    public final static HashMap<Minecart, Integer> moveSoundCds = new HashMap<>();
+
+    public static void soundOnRail(RideableMinecart minecart, double speed){
+        if(moveSoundCds.containsKey(minecart)){
+            if(minecart.getTicksLived() - moveSoundCds.get(minecart) < MOVE_SOUND_CD) return;
+        }
+        minecart.getWorld().stopSound(SoundStop.named(Sound.ENTITY_MINECART_INSIDE));
+        if(!minecart.isEmpty()){
+            for(Entity entity : minecart.getNearbyEntities(5, 5, 5)){
+                if(entity instanceof Player player){
+                    player.playSound(
+                            minecart.getLocation(),
+                            Sound.ENTITY_MINECART_INSIDE,
+                            (float) Math.min(speed/2, 0.6), 1.0f
+                    );
+                }
+            }
+        }
+        moveSoundCds.put(minecart, minecart.getTicksLived());
+    }
+    public static void soundNotOnRail(RideableMinecart minecart, double speed){
+        if(moveSoundCds.containsKey(minecart)){
+            if(minecart.getTicksLived() - moveSoundCds.get(minecart) < MOVE_SOUND_CD) return;
+        }
+        minecart.getWorld().stopSound(SoundStop.named(Sound.ENTITY_MINECART_INSIDE));
+        if(!minecart.isEmpty()){
+            for(Entity entity : minecart.getNearbyEntities(5, 5, 5)){
+                if(entity instanceof Player player){
+                    if(minecart.isInWater()){
+                        player.playSound(
+                                minecart.getLocation(),
+                                Sound.ENTITY_AXOLOTL_SWIM,
+                                (float) speed, 1.0f
+                        );
+                    }
+                    else{
+                        player.playSound(
+                                minecart.getLocation(),
+                                Sound.ENTITY_BREEZE_IDLE_GROUND,
+                                (float) speed, 0.8f
+                        );
+                    }
+                }
+            }
+        }
+        moveSoundCds.put(minecart, minecart.getTicksLived());
+    }
+    public static void soundOver(RideableMinecart minecart){
+        if(!minecart.isEmpty()){
+            for(Entity entity : minecart.getNearbyEntities(5, 5, 5)){
+                if(entity instanceof Player player){
+                    player.stopSound(SoundStop.named(Sound.ENTITY_MINECART_INSIDE));
+                    player.stopSound(SoundStop.named(Sound.ENTITY_AXOLOTL_SWIM));
+                    player.stopSound(SoundStop.named(Sound.ENTITY_BREEZE_IDLE_GROUND));
+                }
+            }
+        }
+    }
+
     private static void maxSpeedUpAnimation(Minecart minecart){
         minecart.getWorld().spawnParticle(
                 Particle.FIREWORK, // 粒子类型
@@ -66,7 +124,7 @@ public class Minecarts {
                 1.0f
         );
     }
-    public static void maxSpeedUpEvent(Minecart minecart, Player player){
+    public static void maxSpeedUpEvent(RideableMinecart minecart, Player player){
         if(minecart.getMaxSpeed() >= MAX) {
             minecart.setMaxSpeed(MAX);
             player.sendActionBar(Component.text("已经解放全部速度限制", NamedTextColor.RED));
@@ -109,7 +167,7 @@ public class Minecarts {
                 1.0f
         );
     }
-    public static void maxSpeedDnEvent(Minecart minecart, Player player){
+    public static void maxSpeedDnEvent(RideableMinecart minecart, Player player){
         if(minecart.getMaxSpeed() <= MIN) {
             minecart.setMaxSpeed(MIN);
             player.sendActionBar(Component.text("已经启用全部速度限制", NamedTextColor.RED));
@@ -122,34 +180,11 @@ public class Minecarts {
         }
     }
 
-    public static double getSpeed(VehicleMoveEvent e){
-        Location from = e.getFrom();
-        Location to = e.getTo();
-        double x = Math.abs(from.getX() - to.getX());
-        double y = Math.abs(from.getY() - to.getY());
-        double z = Math.abs(from.getZ() - to.getZ());
-        return Math.sqrt(x*x+y*y+z*z);
-    }
-    public static double getSquaredSpeed(VehicleMoveEvent e){
-        Location from = e.getFrom();
-        Location to = e.getTo();
-        double x = Math.abs(from.getX() - to.getX());
-        double z = Math.abs(from.getZ() - to.getZ());
-        return Math.sqrt(x*x+z*z);
-    }
-    public static Vector getVelocity(VehicleMoveEvent e){
-        Location from = e.getFrom();
-        Location to = e.getTo();
-        double x = to.getX() - from.getX();
-        double y = to.getY() - from.getY();
-        double z = to.getZ() - from.getZ();
-        return new Vector(x, y, z);
-    }
-
-    public static void tryStartFly(Minecart minecart, double speed){
+    public static void tryStartFly(RideableMinecart minecart, double speed){
         //为了防止下坡飞出，本格和车下都需要铁轨判断
         switch(minecart.getLocation().getBlock().getType()){
             case Material.RAIL: case Material.DETECTOR_RAIL: case Material.POWERED_RAIL:
+                Minecarts.stopFly(minecart);
                 break;
             default:
                 switch(minecart.getLocation().add(0, -1, 0).getBlock().getType()){
@@ -157,13 +192,14 @@ public class Minecarts {
                         Minecarts.startFly(minecart, speed);
                         break;
                     case Material.RAIL: case Material.DETECTOR_RAIL: case Material.POWERED_RAIL:
+                        Minecarts.stopFly(minecart);
                         break;
                     default:
                         Minecarts.landing(minecart, speed);
                 }
         }
     }
-    public static void startFly(Minecart minecart, double speed){
+    public static void startFly(RideableMinecart minecart, double speed){
         var delay = Math.round(10 / speed);
         new BukkitRunnable(){
             @Override
@@ -174,7 +210,7 @@ public class Minecarts {
         }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), delay);
     }
 
-    public static void tryStopFly(Minecart minecart){
+    public static void tryStopFly(RideableMinecart minecart){
         switch (minecart.getLocation().add(0, -1, 0).getBlock().getType()){
             case Material.AIR: case Material.CAVE_AIR:
                 break;
@@ -186,21 +222,21 @@ public class Minecarts {
                 new BukkitRunnable(){
                     @Override
                     public void run(){
-                        Minecarts.minecartExplosion(minecart);
+                        Minecarts.vehicleExplosion(minecart);
                     }
                 }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 5);
                 break;
             default:
                 Minecarts.stopFly(minecart);
-                Minecarts.minecartExplosion(minecart);
+                Minecarts.vehicleExplosion(minecart);
         }
     }
-    public static void stopFly(Minecart minecart){
+    public static void stopFly(RideableMinecart minecart){
         minecart.setGravity(true);
         minecart.setFlyingVelocityMod(flyingVelocityMod_ori);
     }
 
-    public static boolean tryLanding(Minecart minecart, double speed, double speed_y){
+    public static boolean tryLanding(RideableMinecart minecart, double speed, double speed_y){
         if(speed_y < LAND_MAX_Y) return false;
         return switch (minecart.getLocation().add(0, -1, 0).getBlock().getType()) {
             case Material.AIR, Material.CAVE_AIR -> false;
@@ -214,7 +250,7 @@ public class Minecarts {
             }
         };
     }
-    public static void landing(Minecart minecart, double speed){
+    public static void landing(RideableMinecart minecart, double speed){
         minecart.setFallDistance(0);// 对于坐在矿车上摔落的情况，是按照矿车掉落高度计算
         //minecart.getPassengers().get(0).setFallDistance(0);
         //加一点延迟 避免先于可能的碰撞触发导致碰撞不触发坠机
@@ -232,7 +268,20 @@ public class Minecarts {
         }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 2);
     }
 
-    public static void flyControl(Minecart minecart){
+    public static void flyModChange(RideableMinecart minecart, double velocity_y){
+        if(velocity_y >= 0){
+            //上飞
+            if(!minecart.getFlyingVelocityMod().equals(Minecarts.flyingVelocityMod_up)) {
+                minecart.setFlyingVelocityMod(Minecarts.flyingVelocityMod_up);
+            }
+        }else{
+            //下飞
+            if(!minecart.getFlyingVelocityMod().equals(Minecarts.flyingVelocityMod_down)){
+                minecart.setFlyingVelocityMod(Minecarts.flyingVelocityMod_down);
+            }
+        }
+    }
+    public static void flyControl(RideableMinecart minecart){
         if(!(minecart.getPassengers().get(0) instanceof Player player)) return;
         if(player.getInventory().getItemInMainHand().getType() != Minecarts.CONTROL_ITEM) return;
 
@@ -264,43 +313,20 @@ public class Minecarts {
         minecart.setVelocity(velocity);
     }
 
-    private static void minecartExplosionAnimation(Minecart minecart){
-        minecart.getWorld().spawnParticle(Particle.EXPLOSION, minecart.getLocation(),
-                50, 1, 1, 1
-        );
-        minecart.getWorld().playSound(
-                minecart.getLocation(),
-                Sound.ENTITY_GENERIC_EXPLODE,
-                1.0f, 1.0f
-        );
-    }
-    public static void minecartExplosion(Minecart minecart){
-            for(Entity entity : minecart.getPassengers()){
-                if(entity instanceof Damageable eneity_damageable){
-                    var velocity = minecart.getVelocity();
-                    double x = Math.abs(velocity.getX());
-                    double y = Math.abs(velocity.getY());
-                    double z = Math.abs(velocity.getZ());
-                    eneity_damageable.damage(10 * Math.max(Math.max(x, z), y));
-                    eneity_damageable.setFireTicks(120);
-                }
-            }
-            minecart.eject();
-            minecartExplosionAnimation(minecart);
-            Springs.createSpring(minecart, 1200);
-            minecart.remove();
+    public static void vehicleExplosion(RideableMinecart minecart){
+        Minecarts.soundOver(minecart);
+        Vehicles.vehicleExplosion(minecart);
     }
 
-    private final static long SOUND_CD = 1000L;
-    public final static HashMap<Minecart, Long> soundCds = new HashMap<>();
-    public static void entityCrushed(RideableMinecart minecart, Entity entity){
+    synchronized public static void entityCrushed(RideableMinecart minecart, Entity entity){
         var velocity = minecart.getVelocity();
         entity.setVelocity(velocity.setY(Math.abs(velocity.getY()) + 1).multiply(2));
     }
+
     private static void minecartCrushedSound(RideableMinecart minecart){
-        if(soundCds.containsKey(minecart)){
-            if(System.currentTimeMillis() - soundCds.get(minecart) < SOUND_CD){
-                soundCds.put(minecart,System.currentTimeMillis());
+        if(crushedSoundCds.containsKey(minecart)){
+            if(minecart.getTicksLived() - crushedSoundCds.get(minecart) < CRUSHED_SOUND_CD){
+                crushedSoundCds.put(minecart, minecart.getTicksLived());
                 return;
             }
         }
@@ -316,9 +342,9 @@ public class Minecarts {
                 0.6f,
                 1.0f
         );
-        soundCds.put(minecart,System.currentTimeMillis());
+        crushedSoundCds.put(minecart, minecart.getTicksLived());
     }
-    public static void minecartCrushed(RideableMinecart minecart, Minecart minecart_crushed){
+    synchronized public static void minecartCrushed(RideableMinecart minecart, Minecart minecart_crushed){
         minecartCrushedSound(minecart);
         var velocity = minecart.getVelocity();
         minecart_crushed.setMaxSpeed(
@@ -342,10 +368,11 @@ public class Minecarts {
             }
         }
     }
+
     private static void livingEntityCrushedSound(RideableMinecart minecart){
-        if(soundCds.containsKey(minecart)){
-            if(System.currentTimeMillis() - soundCds.get(minecart) < SOUND_CD) {
-                soundCds.put(minecart,System.currentTimeMillis());
+        if(crushedSoundCds.containsKey(minecart)){
+            if(minecart.getTicksLived() - crushedSoundCds.get(minecart) < CRUSHED_SOUND_CD) {
+                crushedSoundCds.put(minecart, minecart.getTicksLived());
                 return;
             }
         }
@@ -362,7 +389,7 @@ public class Minecarts {
                 1.0f
         );
     }
-    public static void livingEntityCrushed(RideableMinecart minecart, LivingEntity livingEntity){
+    synchronized public static void livingEntityCrushed(RideableMinecart minecart, LivingEntity livingEntity){
         livingEntityCrushedSound(minecart);
         var velocity = minecart.getVelocity();
         if(livingEntity.getType() != EntityType.IRON_GOLEM){

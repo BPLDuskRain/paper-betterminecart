@@ -7,6 +7,10 @@ import com.duskrainfall.betterminecart.tools.FileGenerator;
 import com.duskrainfall.betterminecart.tools.PropertiesEditor;
 import com.duskrainfall.betterminecart.tools.SqlGenerator;
 import com.duskrainfall.betterminecart.vehicle.*;
+import com.duskrainfall.betterminecart.vehicle.CollisionListener;
+import com.duskrainfall.betterminecart.vehicle.DriveListener;
+import com.duskrainfall.betterminecart.vehicle.boat.BoatMoveListener;
+import com.duskrainfall.betterminecart.vehicle.minecart.MinecartMoveListener;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
@@ -70,7 +74,8 @@ public final class BetterMinecart extends JavaPlugin {
         vehicleCommand.setTabCompleter(new VehicleTabCompleter());
 
         PluginManager pluginManager =  Bukkit.getPluginManager();
-        pluginManager.registerEvents(new VehicleMovementListener(), this);
+        pluginManager.registerEvents(new MinecartMoveListener(), this);
+        pluginManager.registerEvents(new BoatMoveListener(), this);
         pluginManager.registerEvents(new DriveListener(), this);
         pluginManager.registerEvents(new CollisionListener(), this);
 

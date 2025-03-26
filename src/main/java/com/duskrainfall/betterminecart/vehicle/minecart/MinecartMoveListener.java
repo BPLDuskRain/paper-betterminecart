@@ -1,7 +1,6 @@
-package com.duskrainfall.betterminecart.vehicle;
+package com.duskrainfall.betterminecart.vehicle.minecart;
 
 import com.duskrainfall.betterminecart.BetterMinecart;
-import net.kyori.adventure.sound.SoundStop;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Sound;
@@ -27,7 +26,7 @@ import java.util.List;
 //    public boolean isOnVehicle = false;
 //}
 
-public class VehicleMovementListener implements Listener {
+public class MinecartMoveListener implements Listener {
 //    final private HashMap<String, PlayerInfo> infos = new HashMap<>();
 
 //    @Override
@@ -69,10 +68,13 @@ public class VehicleMovementListener implements Listener {
 //
     @EventHandler
     public void leaveVehicle(VehicleExitEvent e){
-        //只检测玩家下载具
+        //只检测玩家下车
         if(!(e.getVehicle() instanceof RideableMinecart minecart)) return;
         if(!(e.getExited() instanceof Player player)) return;
         if(minecart.hasGravity()) return;
+
+        Minecarts.soundOver(minecart);
+
         new BukkitRunnable(){
             @Override
             public void run(){
@@ -89,29 +91,30 @@ public class VehicleMovementListener implements Listener {
     public void destroyVehicle(VehicleDestroyEvent e){
         Vehicle vehicle = e.getVehicle();
         if(!(vehicle instanceof RideableMinecart minecart)) return;
-        Minecarts.soundCds.remove(minecart);
+
+        Minecarts.soundOver(minecart);
+        Minecarts.moveSoundCds.remove(minecart);
+        Minecarts.crushedSoundCds.remove(minecart);
     }
 
-    int count = 0;
+    int minecartCount = 0;
     @EventHandler
-    public void onVehicle_speed(VehicleMoveEvent e){
-        //获取速度
-        Vehicle vehicle = e.getVehicle();
-        if(!(vehicle instanceof RideableMinecart minecart)) return;
-        if(vehicle.isEmpty()) return;
-        if(!(vehicle.getPassengers().get(0) instanceof Player)) return;
+    public void onMinecart_speed(VehicleMoveEvent e){
+        if(!(e.getVehicle() instanceof RideableMinecart minecart)) return;
+        if(minecart.isEmpty()) return;
+        if(!(minecart.getPassengers().get(0) instanceof Player)) return;
 
-        if(count > 0){
-            count--;
+        if(minecartCount > 0){
+            minecartCount--;
             return;
         }
-        count = minecart.hasGravity() ? Minecarts.LISTEN_GAP : Minecarts.LISTEN_GAP / 2;
+        minecartCount = minecart.hasGravity() ? Minecarts.LISTEN_GAP : Minecarts.LISTEN_GAP / 2;
 
         double speed = Minecarts.getSpeed(e);
         double squaredSpeed = Minecarts.getSquaredSpeed(e);
         Vector velocity = Minecarts.getVelocity(e);
-        if(speed > Minecarts.MAX * 2){
-            Minecarts.minecartExplosion(minecart);
+        if(speed > Minecarts.MAX * 2) {
+            Minecarts.vehicleExplosion(minecart);
         }
 
         //获取乘客
@@ -120,13 +123,13 @@ public class VehicleMovementListener implements Listener {
             if(!(passenger instanceof Player player)){
                 continue;
             }
-            player.sendActionBar(Component.text("当前速率/平面速率为 "
+            player.sendActionBar(Component.text("当前平面速率/速率为 "
                     + String.format("%.2f", squaredSpeed) + '/'
                     + String.format("%.2f", speed) + '('
                     + String.format("%.2f", velocity.getX()) + ' '
                     + String.format("%.2f", velocity.getY()) + ' '
                     + String.format("%.2f", velocity.getZ()) + ')'
-                    + " block/tick "
+                    + " block/tick"
                     , NamedTextColor.GREEN));
             if(!minecart.hasGravity() && squaredSpeed < Minecarts.TO_FALL + 0.2d){
                 if(minecart.getFlyingVelocityMod().equals(Minecarts.flyingVelocityMod_land)){
@@ -159,11 +162,11 @@ public class VehicleMovementListener implements Listener {
         }
     }
 
+
     @EventHandler
-    public void onVehicle_fly(VehicleMoveEvent e) {
-        Vehicle vehicle = e.getVehicle();
-        if(vehicle.isEmpty()) return;
-        if(!(vehicle instanceof RideableMinecart minecart)) return;
+    public void onMinecart_fly(VehicleMoveEvent e) {
+        if(!(e.getVehicle() instanceof RideableMinecart minecart)) return;
+        if(minecart.isEmpty()) return;
         if(!(minecart.getPassengers().get(0) instanceof Player)) return;
 
         if(!minecart.getDerailedVelocityMod().equals(Minecarts.derailedVelocityMod)){
@@ -173,24 +176,11 @@ public class VehicleMovementListener implements Listener {
         double speed = Minecarts.getSpeed(e);
 
         if(minecart.hasGravity()){
+            Minecarts.soundOnRail(minecart, speed);
             if(speed > Minecarts.TO_FLY) Minecarts.tryStartFly(minecart, speed);
         }
         else {
-            minecart.getWorld().stopSound(SoundStop.named(Sound.ENTITY_MINECART_INSIDE));
-            if(minecart.isInWater()){
-                minecart.getWorld().playSound(
-                        minecart.getLocation(),
-                        Sound.ENTITY_AXOLOTL_SWIM,
-                        (float) (speed/2), 1.0f
-                );
-            }
-            else{
-                minecart.getWorld().playSound(
-                        minecart.getLocation(),
-                        Sound.ENTITY_BREEZE_IDLE_GROUND,
-                        (float) (speed/2), 0.8f
-                );
-            }
+            Minecarts.soundNotOnRail(minecart, speed);
             if (speed < Minecarts.TO_FALL) {
                 //加一点延迟 避免先于可能的碰撞触发导致碰撞不触发坠机
                 new BukkitRunnable(){
@@ -204,17 +194,7 @@ public class VehicleMovementListener implements Listener {
             double velocity_y = Minecarts.getVelocity(e).getY();
 
             if(!minecart.getFlyingVelocityMod().equals(Minecarts.flyingVelocityMod_land)){
-                if(velocity_y >= 0){
-                    //上飞
-                    if(!minecart.getFlyingVelocityMod().equals(Minecarts.flyingVelocityMod_up)) {
-                        minecart.setFlyingVelocityMod(Minecarts.flyingVelocityMod_up);
-                    }
-                }else{
-                    //下飞
-                    if(!minecart.getFlyingVelocityMod().equals(Minecarts.flyingVelocityMod_down)){
-                        minecart.setFlyingVelocityMod(Minecarts.flyingVelocityMod_down);
-                    }
-                }
+                Minecarts.flyModChange(minecart, velocity_y);
             }
             else{
                 Minecarts.tryStartFly(minecart, speed);
