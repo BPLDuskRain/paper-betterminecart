@@ -5,16 +5,21 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
-import org.bukkit.entity.Damageable;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Vehicle;
+import org.bukkit.entity.*;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
+
+import java.util.HashMap;
 
 public class Vehicles {
     public final static Material CONTROL_ITEM = Material.RECOVERY_COMPASS;
 
     public final static int LISTEN_GAP = 20;
+
+    public final static int CRUSHED_CD = 20;
+    public final static HashMap<Entity, Integer> crushedCds = new HashMap<>();
 
     public static double getSpeed(VehicleMoveEvent e){
         Location from = e.getFrom();
@@ -65,5 +70,20 @@ public class Vehicles {
         vehicleExplosionAnimation(vehicle);
         Springs.createSpring(vehicle, 1200);
         vehicle.remove();
+    }
+
+    public static void imbalance(LivingEntity livingEntity){
+        livingEntity.addPotionEffect(new PotionEffect(
+                PotionEffectType.WEAKNESS,
+                200, 3, false
+        ));
+        livingEntity.addPotionEffect(new PotionEffect(
+                PotionEffectType.SLOWNESS,
+                200, 3, false
+        ));
+        livingEntity.addPotionEffect(new PotionEffect(
+                PotionEffectType.NAUSEA,
+                200, 0, false
+        ));
     }
 }

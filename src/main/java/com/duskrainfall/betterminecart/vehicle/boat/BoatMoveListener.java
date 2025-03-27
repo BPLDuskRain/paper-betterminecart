@@ -5,25 +5,14 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Vehicle;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.util.Vector;
 
 import java.util.List;
 
 public class BoatMoveListener implements Listener {
-    @EventHandler
-    public void destroyVehicle(VehicleDestroyEvent e){
-        Vehicle vehicle = e.getVehicle();
-        if(!(vehicle instanceof Boat boat)) return;
-
-        Boats.crushedSoundCds.remove(boat);
-    }
-
-
     int boatCount = 0;
     @EventHandler
     public void onBoat_speed(VehicleMoveEvent e){
