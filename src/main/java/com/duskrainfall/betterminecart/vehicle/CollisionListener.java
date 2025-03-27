@@ -21,8 +21,6 @@ public class CollisionListener implements Listener {
         switch(e.getBlock().getType()){
             case Material.RAIL, Material.DETECTOR_RAIL, Material.POWERED_RAIL:
                 return;
-            default:
-                break;
         }
         if(vehicleEntity instanceof RideableMinecart minecart){
             if(minecart.hasGravity()){
@@ -49,24 +47,23 @@ public class CollisionListener implements Listener {
 
         if(vehicleEntity instanceof RideableMinecart minecart){
             Entity entity_crushed = e.getEntity();
-            if(entity_crushed instanceof Minecart){
-                Minecarts.minecartCrushed(minecart, (Minecart) entity_crushed);
-            }
-            else if(entity_crushed instanceof LivingEntity){
-                Minecarts.livingEntityCrushed(minecart, (LivingEntity) entity_crushed);
-                if(entity_crushed.getType() == EntityType.IRON_GOLEM){
-                    Minecarts.vehicleExplosion(minecart);
+            switch (entity_crushed) {
+                case Minecart minecart_crushed -> Minecarts.minecartCrushed(minecart, minecart_crushed);
+                case Boat boat -> Minecarts.boatCrushed(minecart, boat);
+                case LivingEntity livingEntity -> {
+                    Minecarts.livingEntityCrushed(minecart, livingEntity);
+                    if (entity_crushed.getType() == EntityType.IRON_GOLEM) {
+                        Minecarts.vehicleExplosion(minecart);
+                    }
                 }
-            }
-            else {
-                Minecarts.entityCrushed(minecart, entity_crushed);
+                default -> Minecarts.entityCrushed(minecart, entity_crushed);
             }
             e.setCancelled(true);
         }
         else if(vehicleEntity instanceof Boat boat){
             Entity entity_crushed = e.getEntity();
-            if(entity_crushed instanceof Player){
-                Boats.playerCrushed(boat, (Player) entity_crushed);
+            if(entity_crushed instanceof LivingEntity){
+                Boats.livingEntityCrushed(boat, (LivingEntity) entity_crushed);
             }
             else if(entity_crushed instanceof Vehicle){
                 Boats.vehicleCrushed(boat, (Vehicle) entity_crushed);

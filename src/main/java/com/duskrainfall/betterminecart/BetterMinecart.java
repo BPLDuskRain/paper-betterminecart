@@ -73,14 +73,14 @@ public final class BetterMinecart extends JavaPlugin {
         vehicleCommand.setExecutor(new VehicleCommand());
         vehicleCommand.setTabCompleter(new VehicleTabCompleter());
 
-        PluginManager pluginManager =  Bukkit.getPluginManager();
+        PluginManager pluginManager = Bukkit.getPluginManager();
         pluginManager.registerEvents(new MinecartMoveListener(), this);
         pluginManager.registerEvents(new BoatMoveListener(), this);
         pluginManager.registerEvents(new DriveListener(), this);
         pluginManager.registerEvents(new CollisionListener(), this);
+        pluginManager.registerEvents(new KillEntityListener(), this);
 
-        DropItemListener dropItemListener =  new DropItemListener();
-        pluginManager.registerEvents(dropItemListener, this);
+        pluginManager.registerEvents(new DropItemListener(), this);
 
         if(data || mysql){
             Springs.readBlocks(PropertiesEditor.getSaveType());
