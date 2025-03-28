@@ -81,7 +81,7 @@ public class Minecarts extends Vehicles {
                         player.playSound(
                                 minecart.getLocation(),
                                 Sound.ENTITY_BREEZE_IDLE_GROUND,
-                                (float) speed, 0.8f
+                                (float) speed * 2, 0.8f
                         );
                     }
                 }
@@ -202,6 +202,9 @@ public class Minecarts extends Vehicles {
         new BukkitRunnable(){
             @Override
             public void run(){
+                if(minecart.isEmpty()) return;
+                if(!(minecart.getPassengers().get(0) instanceof Player)) return;
+
                 minecart.setGravity(false);
                 minecart.setFlyingVelocityMod(flyingVelocityMod_init);
             }
@@ -269,19 +272,14 @@ public class Minecarts extends Vehicles {
     public static void landing(RideableMinecart minecart, double speed){
         minecart.setFallDistance(0);// 对于坐在矿车上摔落的情况，是按照矿车掉落高度计算
         //minecart.getPassengers().get(0).setFallDistance(0);
-        //加一点延迟 避免先于可能的碰撞触发导致碰撞不触发坠机
-        new BukkitRunnable(){
-            @Override
-            public void run(){
-                minecart.setFlyingVelocityMod(flyingVelocityMod_land);
-                if(speed > TO_FLY){
-                    Minecarts.startFly(minecart, speed);
-                }
-                else if(speed < TO_FALL){
-                    Minecarts.stopFly(minecart);
-                }
-            }
-        }.runTaskLater(JavaPlugin.getPlugin(BetterMinecart.class), 2);
+
+        minecart.setFlyingVelocityMod(flyingVelocityMod_land);
+        if(speed > TO_FLY){
+            Minecarts.startFly(minecart, speed);
+        }
+        else if(speed < TO_FALL){
+            Minecarts.stopFly(minecart);
+        }
     }
 
     public static void flyModChange(RideableMinecart minecart, double velocity_y){

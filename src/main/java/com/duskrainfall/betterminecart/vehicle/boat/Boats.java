@@ -18,13 +18,23 @@ public class Boats extends Vehicles {
     public final static HashMap<Boat, Integer> crushedSoundCds = new HashMap<>();
 
     public static void boatUp(Boat boat, Player player){
-        switch(boat.getLocation().add(0, -1, 0).getBlock().getType()){
-            case Material.AIR: case Material.CAVE_AIR:
-                player.sendActionBar(Component.text("空中无法起跳", NamedTextColor.RED));
-                break;
-            default:
-                Vector velocity = boat.getVelocity();
-                boat.setVelocity(velocity.setY(velocity.getY() + 1));
+        if(boat.isOnGround()){
+            player.sendActionBar(Component.text("地上无法起跳", NamedTextColor.RED));
+        }
+        else{
+            switch(boat.getLocation().add(0, -1, 0).getBlock().getType()){
+                case Material.AIR: case Material.CAVE_AIR:
+                    player.sendActionBar(Component.text("空中无法起跳", NamedTextColor.RED));
+                    break;
+                default:
+                    Vector velocity = boat.getVelocity();
+                    boat.setVelocity(velocity.setY(velocity.getY() + 1));
+                    boat.getWorld().playSound(
+                            boat.getLocation(),
+                            Sound.ENTITY_GENERIC_SPLASH,
+                            1.0f, 1.0f
+                    );
+            }
         }
     }
 
