@@ -2,7 +2,6 @@ package com.duskrainfall.betterminecart.vehicle.minecart;
 
 import com.duskrainfall.betterminecart.BetterMinecart;
 import com.duskrainfall.betterminecart.vehicle.Vehicles;
-import net.kyori.adventure.sound.SoundStop;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
@@ -22,6 +21,8 @@ public class Minecarts extends Vehicles {
     public final static double TO_FLY = 0.6d;
     public final static double TO_FALL = 0.2d;
 
+    public final static int MAX_HEIGHT = 512;
+
     public final static float ANGLE_SQUARE = 90.0f;
     public final static double CHANGE_SQUARE = 0.0001d;
     public final static double CHANGE_HEIGHT = 0.00005d;
@@ -39,34 +40,33 @@ public class Minecarts extends Vehicles {
 
     public final static Vector derailedVelocityMod = new Vector(0.9d, 0.9d, 0.9d);
 
-    private final static int CRUSHED_SOUND_CD = 10;
-    public final static HashMap<Minecart, Integer> crushedSoundCds = new HashMap<>();
     private final static int MOVE_SOUND_CD = 20;
     public final static HashMap<Minecart, Integer> moveSoundCds = new HashMap<>();
 
-    public static void soundOnRail(RideableMinecart minecart, double speed){
-        if(moveSoundCds.containsKey(minecart)){
-            if(minecart.getTicksLived() - moveSoundCds.get(minecart) < MOVE_SOUND_CD) return;
-        }
-        minecart.getWorld().stopSound(SoundStop.named(Sound.ENTITY_MINECART_INSIDE));
-        if(!minecart.isEmpty()){
-            for(Entity entity : minecart.getNearbyEntities(5, 5, 5)){
-                if(entity instanceof Player player){
-                    player.playSound(
-                            minecart.getLocation(),
-                            Sound.ENTITY_MINECART_INSIDE,
-                            (float) Math.min(speed/2, 0.6), 1.0f
-                    );
-                }
-            }
-        }
-        moveSoundCds.put(minecart, minecart.getTicksLived());
-    }
+//    public static void soundOnRail(RideableMinecart minecart, double speed){
+//        if(moveSoundCds.containsKey(minecart)){
+//            if(minecart.getTicksLived() - moveSoundCds.get(minecart) < MOVE_SOUND_CD) return;
+//        }
+//        minecart.getWorld().stopSound(SoundStop.named(Sound.ENTITY_MINECART_INSIDE));
+//        if(!minecart.isEmpty()){
+//            for(Entity entity : minecart.getNearbyEntities(5, 5, 5)){
+//                if(entity instanceof Player player){
+//                    player.playSound(
+//                            minecart.getLocation(),
+//                            Sound.ENTITY_MINECART_INSIDE,
+//                            (float) Math.min(speed/2, 0.6), 1.0f
+//                    );
+//                }
+//            }
+//        }
+//        moveSoundCds.put(minecart, minecart.getTicksLived());
+//    }
     public static void soundNotOnRail(RideableMinecart minecart, double speed){
         if(moveSoundCds.containsKey(minecart)){
             if(minecart.getTicksLived() - moveSoundCds.get(minecart) < MOVE_SOUND_CD) return;
         }
-//        minecart.getWorld().stopSound(SoundStop.named(Sound.ENTITY_MINECART_INSIDE));
+        moveSoundCds.put(minecart, minecart.getTicksLived());
+
         if(!minecart.isEmpty()){
             for(Entity entity : minecart.getNearbyEntities(5, 5, 5)){
                 if(entity instanceof Player player){
@@ -87,19 +87,18 @@ public class Minecarts extends Vehicles {
                 }
             }
         }
-        moveSoundCds.put(minecart, minecart.getTicksLived());
     }
-    public static void soundOver(RideableMinecart minecart){
-        if(!minecart.isEmpty()){
-            for(Entity entity : minecart.getNearbyEntities(5, 5, 5)){
-                if(entity instanceof Player player){
-                    player.stopSound(SoundStop.named(Sound.ENTITY_MINECART_INSIDE));
-                    player.stopSound(SoundStop.named(Sound.ENTITY_AXOLOTL_SWIM));
-                    player.stopSound(SoundStop.named(Sound.ENTITY_BREEZE_IDLE_GROUND));
-                }
-            }
-        }
-    }
+//    public static void soundOver(RideableMinecart minecart){
+//        if(!minecart.isEmpty()){
+//            for(Entity entity : minecart.getNearbyEntities(5, 5, 5)){
+//                if(entity instanceof Player player){
+//                    player.stopSound(SoundStop.named(Sound.ENTITY_MINECART_INSIDE));
+//                    player.stopSound(SoundStop.named(Sound.ENTITY_AXOLOTL_SWIM));
+//                    player.stopSound(SoundStop.named(Sound.ENTITY_BREEZE_IDLE_GROUND));
+//                }
+//            }
+//        }
+//    }
 
     private static void maxSpeedUpAnimation(Minecart minecart){
         minecart.getWorld().spawnParticle(
@@ -128,6 +127,8 @@ public class Minecarts extends Vehicles {
             player.sendActionBar(Component.text("已经解放全部速度限制", NamedTextColor.RED));
         }
         else{
+            if(Vehicles.controlCooling(player, "矿车速度解放")) return;
+
             minecart.setMaxSpeed(minecart.getMaxSpeed()*2);
             if(minecart.hasGravity()){
                 player.sendActionBar(Component.text("载具最大单向速率已经增加到 "
@@ -171,6 +172,8 @@ public class Minecarts extends Vehicles {
             player.sendActionBar(Component.text("已经启用全部速度限制", NamedTextColor.RED));
         }
         else{
+            if(Vehicles.controlCooling(player, "矿车速度限制")) return;
+
             minecart.setMaxSpeed(minecart.getMaxSpeed()/2);
             player.sendActionBar(Component.text("载具最大单向速率已经限制到 "
                     + minecart.getMaxSpeed() + " block/tick", NamedTextColor.AQUA));
@@ -186,7 +189,7 @@ public class Minecarts extends Vehicles {
                 break;
             default:
                 switch(minecart.getLocation().add(0, -1, 0).getBlock().getType()){
-                    case Material.AIR: case Material.CAVE_AIR:
+                    case Material.AIR: case Material.CAVE_AIR: case Material.VOID_AIR:
                         Minecarts.startFly(minecart, speed);
                         break;
                     case Material.RAIL: case Material.DETECTOR_RAIL: case Material.POWERED_RAIL:
@@ -219,7 +222,7 @@ public class Minecarts extends Vehicles {
                 break;
             default:
                 switch (minecart.getLocation().add(0, -1, 0).getBlock().getType()){
-                    case Material.AIR: case Material.CAVE_AIR:
+                    case Material.AIR: case Material.CAVE_AIR: case Material.VOID_AIR:
                         break;
                     case Material.RAIL: case Material.DETECTOR_RAIL: case Material.POWERED_RAIL:
                         Minecarts.stopFly(minecart);
@@ -254,7 +257,7 @@ public class Minecarts extends Vehicles {
             }
             default -> {
                  switch (minecart.getLocation().add(0, -1, 0).getBlock().getType()) {
-                    case Material.AIR, Material.CAVE_AIR -> {
+                    case Material.AIR, Material.CAVE_AIR, Material.VOID_AIR -> {
                         yield false;
                     }
                     case Material.RAIL, Material.DETECTOR_RAIL, Material.POWERED_RAIL -> {
@@ -327,12 +330,12 @@ public class Minecarts extends Vehicles {
         minecart.setVelocity(velocity);
     }
 
-    public static void vehicleExplosion(RideableMinecart minecart){
-        Minecarts.soundOver(minecart);
-        Vehicles.vehicleExplosion(minecart);
-    }
+//    public static void vehicleExplosion(RideableMinecart minecart){
+//        Minecarts.soundOver(minecart);
+//        Vehicles.vehicleExplosion(minecart);
+//    }
 
-    synchronized public static void entityCrushed(RideableMinecart minecart, Entity entity){
+    public static void entityCrushed(RideableMinecart minecart, Entity entity){
         if(entity.isInsideVehicle()) return;
 
         var velocity = minecart.getVelocity();
@@ -340,12 +343,7 @@ public class Minecarts extends Vehicles {
     }
 
     private static void vehicleCrushedSound(RideableMinecart minecart){
-        if(crushedSoundCds.containsKey(minecart)){
-            if(minecart.getTicksLived() - crushedSoundCds.get(minecart) < CRUSHED_SOUND_CD){
-                crushedSoundCds.put(minecart, minecart.getTicksLived());
-                return;
-            }
-        }
+        if(Vehicles.crushSoundCooling(minecart)) return;
 
         minecart.getWorld().playSound(
                 minecart.getLocation(),
@@ -359,10 +357,8 @@ public class Minecarts extends Vehicles {
                 0.6f,
                 1.0f
         );
-
-        crushedSoundCds.put(minecart, minecart.getTicksLived());
     }
-    synchronized public static void minecartCrushed(RideableMinecart minecart, Minecart minecart_crushed){
+    public static void minecartCrushed(RideableMinecart minecart, Minecart minecart_crushed){
         if(minecart_crushed.isInsideVehicle()) return;
 
         vehicleCrushedSound(minecart);
@@ -373,12 +369,7 @@ public class Minecarts extends Vehicles {
             }
         }
 
-        if(crushedCds.containsKey(minecart_crushed)){
-            if(minecart_crushed.getTicksLived() - crushedCds.get(minecart_crushed) < CRUSHED_CD){
-                crushedCds.put(minecart_crushed, minecart_crushed.getTicksLived());
-                return;
-            }
-        }
+        if(Vehicles.crushCooling(minecart_crushed)) return;
 
         var velocity = minecart.getVelocity();
         minecart_crushed.setMaxSpeed(
@@ -398,33 +389,20 @@ public class Minecarts extends Vehicles {
         );
 
         minecart_crushed.setVelocity(velocity.multiply(2));
-
-        crushedCds.put(minecart_crushed, minecart_crushed.getTicksLived());
     }
-    synchronized public static void boatCrushed(RideableMinecart minecart, Boat boat){
+    public static void boatCrushed(RideableMinecart minecart, Boat boat){
         if(boat.isInsideVehicle()) return;
 
         vehicleCrushedSound(minecart);
 
-        if(crushedCds.containsKey(boat)){
-            if(boat.getTicksLived() - crushedCds.get(boat) < CRUSHED_CD){
-                crushedCds.put(boat, boat.getTicksLived());
-                return;
-            }
-        }
+        if(Vehicles.crushCooling(boat)) return;
 
         var velocity = minecart.getVelocity();
         boat.setVelocity(velocity.setY(Math.abs(velocity.getY()) + 1).multiply(2));
-
-        crushedCds.put(boat, boat.getTicksLived());
     }
+
     private static void livingEntityCrushedSound(RideableMinecart minecart){
-        if(crushedSoundCds.containsKey(minecart)){
-            if(minecart.getTicksLived() - crushedSoundCds.get(minecart) < CRUSHED_SOUND_CD) {
-                crushedSoundCds.put(minecart, minecart.getTicksLived());
-                return;
-            }
-        }
+        if(Vehicles.crushSoundCooling(minecart)) return;
 
         minecart.getWorld().playSound(
                 minecart.getLocation(),
@@ -438,27 +416,18 @@ public class Minecarts extends Vehicles {
                 0.6f,
                 1.0f
         );
-
-        crushedSoundCds.put(minecart, minecart.getTicksLived());
     }
-    synchronized public static void livingEntityCrushed(RideableMinecart minecart, LivingEntity livingEntity){
+    public static void livingEntityCrushed(RideableMinecart minecart, LivingEntity livingEntity){
         if(livingEntity.isInsideVehicle()) return;
 
         livingEntityCrushedSound(minecart);
 
-        if(crushedCds.containsKey(livingEntity)){
-            if(livingEntity.getTicksLived() - crushedCds.get(livingEntity) < CRUSHED_CD){
-                crushedCds.put(livingEntity, livingEntity.getTicksLived());
-                return;
-            }
-        }
+        if(Vehicles.crushCooling(livingEntity)) return;
 
         var velocity = minecart.getVelocity();
         if(livingEntity.getType() != EntityType.IRON_GOLEM){
             livingEntity.setVelocity(velocity.setY(Math.abs(velocity.getY()) + 1).multiply(2));
         }
         Vehicles.imbalance(livingEntity);
-
-        crushedCds.put(livingEntity, livingEntity.getTicksLived());
     }
 }

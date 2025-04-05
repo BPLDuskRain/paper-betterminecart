@@ -1,5 +1,5 @@
 name: betterminecart
-version: '1.6.6-SNAPSHOT'
+version: '1.6.8-SNAPSHOT'
 main: com.duskrainfall.betterminecart.BetterMinecart
 api-version: '1.21'
 commands:

@@ -22,10 +22,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Springs {
     private final static HashSet<Location> los = new HashSet<>();
@@ -33,6 +31,24 @@ public class Springs {
     private final static int REMOVE_RADIUS = 10;
     //    private final static long CONTINUE_TIME = 60000L;
     private final static Plugin plugin = JavaPlugin.getPlugin(BetterMinecart.class);
+
+    public final static ConcurrentHashMap<Player, Integer> cds = new ConcurrentHashMap<>();
+    private final static int CD = 40;
+
+    public final static String CREATE = "spring.create";
+    public final static String REMOVE = "spring.remove";
+
+    public static boolean isCooling(Player player, String opName){
+        if(cds.containsKey(player)){
+            int ticks = player.getTicksLived() - cds.get(player);
+            if(ticks < CD){
+                player.sendActionBar(Component.text(opName + "还有 " + (CD - ticks) + " 刻冷却时间！", NamedTextColor.DARK_RED));
+                return true;
+            }
+        }
+        cds.put(player, player.getTicksLived());
+        return false;
+    }
 
     private static void createSpringAnimation(Entity entity){
         Location item_location = entity.getLocation();
