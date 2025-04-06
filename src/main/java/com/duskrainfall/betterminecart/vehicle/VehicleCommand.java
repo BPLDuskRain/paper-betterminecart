@@ -24,6 +24,10 @@ public class VehicleCommand implements CommandExecutor {
             return true;
         }
         Entity vehicle = executor.getVehicle();
+        if(args.length == 0) {
+            sender.sendMessage("请输入正确参数！");
+            return false;
+        }
         switch(args[0]){
             case "back": case"b":
                 if(vehicle instanceof RideableMinecart || vehicle instanceof Boat){

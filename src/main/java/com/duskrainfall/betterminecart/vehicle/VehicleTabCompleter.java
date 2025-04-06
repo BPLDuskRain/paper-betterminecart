@@ -12,12 +12,12 @@ import java.util.List;
 public class VehicleTabCompleter implements TabCompleter {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String nickname, @NotNull String[] args) {
-        List<String> complecation = new ArrayList<>();
+        List<String> complication = new ArrayList<>();
         if(args.length == 1){
-            complecation.add("back");
-            complecation.add("stop");
+            complication.add("back");
+            complication.add("stop");
         }
 
-        return complecation;
+        return complication;
     }
 }

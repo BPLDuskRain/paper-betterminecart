@@ -10,5 +10,6 @@ import java.lang.annotation.Target;
 public @interface Col {
     String name();
     String type();
-    String constraint();
+    String constraint() default "";
+    String index() default "";
 }

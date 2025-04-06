@@ -4,7 +4,7 @@ import com.duskrainfall.betterminecart.bean.SpringBlock_Table;
 
 import java.util.HashSet;
 
-public interface SpringBlocksMapper {
+public interface SpringBlockMapper {
     HashSet<SpringBlock_Table> getBlocks();
     void insertBlock(SpringBlock_Table block);
     void clear();

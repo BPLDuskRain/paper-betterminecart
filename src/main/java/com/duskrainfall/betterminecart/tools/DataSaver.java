@@ -41,9 +41,9 @@ public class DataSaver {
     public static SpringBlock_Data toSpringBlock_Data(Location location){
         return new SpringBlock_Data(
                 location.getWorld().getName(),
-                location.getX(),
-                location.getY(),
-                location.getZ()
+                location.getBlockX(),
+                location.getBlockY(),
+                location.getBlockZ()
         );
     }
     private static long count= 1;
@@ -51,9 +51,9 @@ public class DataSaver {
         return new SpringBlock_Table(
                 count++,
                 location.getWorld().getName(),
-                location.getX(),
-                location.getY(),
-                location.getZ()
+                location.getBlockX(),
+                location.getBlockY(),
+                location.getBlockZ()
         );
     }
 

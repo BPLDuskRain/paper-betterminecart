@@ -2,7 +2,7 @@ package com.duskrainfall.betterminecart.spring;
 
 import com.duskrainfall.betterminecart.BetterMinecart;
 import com.duskrainfall.betterminecart.bean.SpringBlock_Data;
-import com.duskrainfall.betterminecart.mapper.SpringBlocksMapper;
+import com.duskrainfall.betterminecart.mapper.SpringBlockMapper;
 import com.duskrainfall.betterminecart.tools.DataSaver;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -264,8 +264,8 @@ public class Springs {
                 break;
             case "mysql":
                 try(SqlSession session = BetterMinecart.sqlSessionFactory.openSession(true)){
-                    SpringBlocksMapper springBlocksMapper = session.getMapper(SpringBlocksMapper.class);
-                    for(var block : springBlocksMapper.getBlocks()){
+                    SpringBlockMapper springBlockMapper = session.getMapper(SpringBlockMapper.class);
+                    for(var block : springBlockMapper.getBlocks()){
                         los.add(DataSaver.toLocation(block));
                     }
                 }
@@ -293,10 +293,10 @@ public class Springs {
                 break;
             case "mysql":
                 try(SqlSession session = BetterMinecart.sqlSessionFactory.openSession(true)){
-                    SpringBlocksMapper springBlocksMapper = session.getMapper(SpringBlocksMapper.class);
-                    springBlocksMapper.clear();
+                    SpringBlockMapper springBlockMapper = session.getMapper(SpringBlockMapper.class);
+                    springBlockMapper.clear();
                     for(var lo : los){
-                        springBlocksMapper.insertBlock(DataSaver.toSpringBlock_Table(lo));
+                        springBlockMapper.insertBlock(DataSaver.toSpringBlock_Table(lo));
                     }
                 }
                 break;

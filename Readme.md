@@ -17,6 +17,7 @@ Thanks to
 ### 指令
 - 载具速度清零：可以通过`/vehicle stop`或其缩写`/ve s`将载具速度清零（只对轨道矿车生效）
 - 载具速度反向：可以通过`/vehicle back`或其缩写`/ve b`将载具速度反向（只对轨道矿车生效）
+- 获取方块历史：可以通过`/monitor`切换视奸模式（需要在配置文件中开启）
 ### 矿车
 - 显示矿车速率：
   - 仅对玩家正在乘坐的矿车生效
@@ -138,7 +139,7 @@ Thanks to
   - 占用 右键单击空气`RIGHT_CLICK_AIR`
 - 火焰弹`FIRE_CHARGE` 掉落物
 - 雪球`SNOWBALL` 掉落物
-## 温泉持久化说明
+## 持久化说明
 在启动一次后，会在插件同级的插件同名文件夹下创建`.properties`文件
 ```properties
 #不启用持久化
@@ -150,26 +151,51 @@ Thanks to
 #使用mysql数据库保存
 #savetype=mysql
 ```
-- 默认`null`不保存
-- `data`：使用POJO序列化直接将温泉方块列表保存到该文件同级`.dat`文件中
+- `null`不保存
+- 默认`data`：使用POJO序列化直接将温泉方块列表保存到该文件同级`.dat`文件中
   - 高速保存，占用空间小，仅本地
 - `mysql`：使用`MySQL`作为数据库管理系统，`MyBatis`作为持久层框架，可本地/远程数据库保存
-  - 保存缓慢，占用空间较大，可远程
+  - 保存缓慢，占用空间较大，可远程，不推荐
+```properties
+#不开启视奸
+#monitor=close
+
+#启用视奸
+#mnitor=open
+```
+- `close`不启用
+- `open`启用视奸功能
 ### 数据库表结构
 本表保存一个单独服务器的温泉方块
 ```SQL
 --主键不要选择自增，自增操作在后端完成
-CREATE TABLE `数据库表名` (
+CREATE TABLE IF NOT EXISTS `数据库表名`(
   `id` bigint PRIMARY KEY,
   `world` varchar(20) NOT NULL,
   `x` double NOT NULL,
   `y` double NOT NULL,
-  `z` double NOT NULL,
+  `z` double NOT NULL
+);
+```
+本表保存一个单独服务器的方块历史记录
+```SQl
+CREATE TABLE IF NOT EXISTS `数据库表名`(
+  `id` bigint AUTO_INCREMENT PRIMARY KEY,
+  `block` varchar(50) NOT NULL,
+  `world` varchar(20) NOT NULL,
+  `x` int NOT NULL,
+  `y` int NOT NULL,
+  `z` int NOT NULL,
+  `player` varchar(20) NOT NULL,
+  `time` datetime NOT NULL,
+  `action` varchar(10) NOT NULL,
+  INDEX `index_block` (world, x, y, z)
 )
 ```
 ### MyBatis配置
 - 该配置文件将在启动一次后自动在插件同级的插件同名文件夹下创建模板
 - 配置文件`betterminecart-mybatis-config.xml`内容应该如下，中文内容需要修改为对应的参数
+- 尽管你可能并不希望启用温泉数据库保存，但仍需填写有效表名，但不会创建
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE configuration
@@ -177,7 +203,8 @@ CREATE TABLE `数据库表名` (
         "http://mybatis.org/dtd/mybatis-3-config.dtd">
 <configuration>
     <properties>
-        <property name="tableName" value="数据库表名"/>
+      <property name="tableName_springBlock" value="温泉方块表名"/>
+      <property name="tableName_monitoredBlock" value="监视方块表名"/>
     </properties>
     <!-- 配置环境 -->
     <environments default="development">
@@ -185,7 +212,7 @@ CREATE TABLE `数据库表名` (
             <transactionManager type="JDBC"/>
             <dataSource type="POOLED">
                 <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
-                <property name="url" value="jdbc:mysql://数据库主机:数据库端口/数据库名?useSSL=false&amp;serverTimezone=UTC"/>
+                <property name="url" value="jdbc:mysql://数据库主机:数据库端口?useSSL=false&amp;serverTimezone=UTC"/>
                 <property name="username" value="用户名"/>
                 <property name="password" value="密码"/>
             </dataSource>
@@ -196,10 +223,13 @@ CREATE TABLE `数据库表名` (
     <!-- 加载映射文件 -->
     <mappers>
         <mapper resource="mapper/SpringBlocksMapper.xml"/>
+        <mapper resource="mapper/MonitoredBlockMapper.xml"/>
     </mappers>
 
 </configuration>
 ```
+默认数据库名为`better_minecart`
+
 请务必注意不要填入和已有表名重复的值
 ## 测试相关
 以下为测试中希望出现的情景
@@ -310,6 +340,13 @@ CREATE TABLE `数据库表名` (
         + 将其速度翻倍，尤其是竖直方向
         + 取消自身的被碰撞效果
     + 对于船
+      + 碰撞生物
+        - 碰撞在`20刻`冷却中：不生效
+          + 一直碰撞则不会冷却
+        + 播放碰撞生物音效
+          - 在`10刻`冷却中：不生效
+          + 一直碰撞则不会冷却
+        + 尝试为其增加两倍的船速度并将原速度反向，并增加额外的竖直速率
       + 碰撞载具
         - 对于有人载具：不生效
         - 碰撞在`20刻`冷却中：不生效
@@ -319,13 +356,6 @@ CREATE TABLE `数据库表名` (
           + 一直碰撞则不会冷却
         + 尝试为其增加两倍的船速度并将原速度反向，并增加额外的竖直速率
         * 对轨道上的矿车失效
-      + 碰撞生物
-        - 碰撞在`20刻`冷却中：不生效
-          + 一直碰撞则不会冷却
-        + 播放碰撞生物音效
-          - 在`10刻`冷却中：不生效
-          + 一直碰撞则不会冷却
-        + 尝试为其增加两倍的船速度并将原速度反向，并增加额外的竖直速率
 + 离开载具监听
   - 载具不是矿车：不生效
   - 离开的不是玩家：不生效
@@ -493,6 +523,13 @@ CREATE TABLE `数据库表名` (
       + 产生模拟降温的粒子和音效
       + 将移除范围内方块移出集合
       + 移除物品
+### 视奸
+- 视奸未开启：不生效
++ 命令`/monitor`
+  + 进入/退出视奸模式
+    + 左击方块：查询方块放置/破坏信息
++ 命令`/monitor clear`
+  + 清空历史记录（OP权限）
 ### 插件
 + 在插件加载时
   + 尝试在插件同路径下创建`betterminecart`文件夹
@@ -505,9 +542,18 @@ CREATE TABLE `数据库表名` (
     + `mysql`启用数据库存储
       + 尝试加载配置文件`betterminecart-mybatis-config.xml`
         + 配置文件正常
-          + 数据库表不存在：尝试根据配置的表名自动创建数据库表
-          + 数据库表存在：可以从对应数据库正确读出温泉方块
+            + 尝试创建数据库`better_minecart`
+            + 数据库表不存在：尝试根据配置的表名自动创建数据库表
+            + 数据库表存在：可以从对应数据库正确读出温泉方块
         - 配置文件不存在/格式异常/数据异常：报错
+  + 检查`betterminecart.properties`中`monitor`的值
+    + `close`视奸不启动
+    + `open`启动视奸 
+      + 尝试加载配置文件`betterminecart-mybatis-config.xml`
+      + 配置文件正常
+        + 尝试创建数据库`better_minecart`
+        + 尝试根据配置的表名自动创建数据库表
+      - 配置文件不存在/格式异常/数据异常：报错
   + 温泉方块开始产生模拟温泉的粒子
 + 在插件卸载时
   + 若启用温泉方块持久化
@@ -521,5 +567,3 @@ CREATE TABLE `数据库表名` (
 + 在不使用追溯指针操作时，载具表现应和原版一致
 + 在正常铁轨上运行时，应当只是更高速的矿车
 * 未修复：速度超过一定值后（不小于0.4格每刻），进入弯道有可能会脱轨（脱轨时机和方向不定）
-### 其他
-+ 如果你觉得这不像矿车/滑翔机，那它就应该优化

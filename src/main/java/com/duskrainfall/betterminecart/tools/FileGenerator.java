@@ -16,7 +16,8 @@ public class FileGenerator {
                     "http://mybatis.org/dtd/mybatis-3-config.dtd">
             <configuration>
                 <properties>
-                    <property name="tableName" value="表名"/>
+                    <property name="tableName_springBlock" value="温泉方块表名"/>
+                    <property name="tableName_monitoredBlock" value="监视方块表名"/>
                 </properties>
                 <!-- 配置环境 -->
                 <environments default="development">
@@ -24,7 +25,7 @@ public class FileGenerator {
                         <transactionManager type="JDBC"/>
                         <dataSource type="POOLED">
                             <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
-                            <property name="url" value="jdbc:mysql://数据库主机:数据库端口/数据库名?useSSL=false&amp;serverTimezone=UTC"/>
+                            <property name="url" value="jdbc:mysql://数据库主机:数据库端口?useSSL=false&amp;serverTimezone=UTC"/>
                             <property name="username" value="用户名"/>
                             <property name="password" value="密码"/>
                         </dataSource>
@@ -34,7 +35,8 @@ public class FileGenerator {
                         
                 <!-- 加载映射文件 -->
                 <mappers>
-                    <mapper resource="mapper/SpringBlocksMapper.xml"/>
+                    <mapper resource="mapper/SpringBlockMapper.xml"/>
+                    <mapper resource="mapper/MonitoredBlockMapper.xml"/>
                 </mappers>
                         
             </configuration>

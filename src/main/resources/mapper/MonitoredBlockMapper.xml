@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duskrainfall.betterminecart.mapper.MonitoredBlockMapper">
+    <select id="getBlockInfo" resultType="com.duskrainfall.betterminecart.bean.MonitoredBlock">
+        SELECT *
+        FROM ${tableName_monitoredBlock}
+        WHERE world=#{world} AND x=#{x} AND y=#{y} AND z=#{z}
+        ORDER BY time DESC
+        LIMIT 10
+    </select>
+
+    <insert id="insertBlock" useGeneratedKeys="true">
+        INSERT INTO ${tableName_monitoredBlock} (block, world, x, y, z, player, time, action)
+        VALUES (#{block}, #{world}, #{x}, #{y}, #{z}, #{player}, #{time}, #{action});
+    </insert>
+
+    <update id="clear">
+        TRUNCATE TABLE ${tableName_monitoredBlock};
+    </update>
+</mapper>

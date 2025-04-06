@@ -1,9 +1,11 @@
 package com.duskrainfall.betterminecart;
 
+import com.duskrainfall.betterminecart.bean.MonitoredBlock;
 import com.duskrainfall.betterminecart.bean.SpringBlock_Table;
 import com.duskrainfall.betterminecart.spring.DropItemListener;
 import com.duskrainfall.betterminecart.spring.Springs;
 import com.duskrainfall.betterminecart.tools.FileGenerator;
+import com.duskrainfall.betterminecart.tools.Monitor;
 import com.duskrainfall.betterminecart.tools.PropertiesEditor;
 import com.duskrainfall.betterminecart.tools.SqlGenerator;
 import com.duskrainfall.betterminecart.vehicle.*;
@@ -22,7 +24,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.SQLException;
+
 import java.sql.Statement;
+
 import java.util.logging.Level;
 
 public final class BetterMinecart extends JavaPlugin {
@@ -36,7 +40,30 @@ public final class BetterMinecart extends JavaPlugin {
     private static boolean data = false;
     private static boolean mysql = false;
 
+    public static boolean isMonitoring = false;
+
     public static SqlSessionFactory sqlSessionFactory;
+
+    private static void SQLInit(Class<?> clazz){
+        try {
+            sqlSessionFactory = new SqlSessionFactoryBuilder()
+                    .build(new FileInputStream(PLUGIN_PATH + '/' + PLUGIN_MYBATIS));
+            try (SqlSession session = sqlSessionFactory.openSession(true)) {
+                String createDataBaseSQL = SqlGenerator.getCreateDatabaseSQL();
+                String changeDataBaseSQL = SqlGenerator.changeDatabase();
+                String createTableSQL = SqlGenerator.getCreateTableSQL(clazz, session);
+                try(Statement statement = session.getConnection().createStatement()){
+                    statement.execute(createDataBaseSQL);
+                    statement.execute(changeDataBaseSQL);
+                    statement.execute(createTableSQL);
+                }catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
     public void onEnable() {
@@ -50,28 +77,26 @@ public final class BetterMinecart extends JavaPlugin {
                 data = true;
                 break;
             case "mysql":
-                try {
-                    sqlSessionFactory = new SqlSessionFactoryBuilder()
-                            .build(new FileInputStream(PLUGIN_PATH + '/' + PLUGIN_MYBATIS));
-                    try (SqlSession session = sqlSessionFactory.openSession(true)) {
-                        String sql = SqlGenerator.generateCreateTableSQL(SpringBlock_Table.class, session);
-                        try(Statement statement = session.getConnection().createStatement()){
-                            statement.execute(sql);
-                        }catch (SQLException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                SQLInit(SpringBlock_Table.class);
                 mysql = true;
                 break;
         }
 
+        if (PropertiesEditor.getMonitor().equals("open")){
+            SQLInit(MonitoredBlock.class);
+            isMonitoring = true;
+            getLogger().log(Level.INFO, "已启动视奸");
+        }
+        else{
+            getLogger().log(Level.INFO, "未启动视奸");
+        }
 
         PluginCommand vehicleCommand = Bukkit.getPluginCommand("vehicle");
         vehicleCommand.setExecutor(new VehicleCommand());
         vehicleCommand.setTabCompleter(new VehicleTabCompleter());
+
+        PluginCommand monitorCommand  = Bukkit.getPluginCommand("monitor");
+        monitorCommand.setExecutor(new Monitor());
 
         PluginManager pluginManager = Bukkit.getPluginManager();
         pluginManager.registerEvents(new MinecartMoveListener(), this);
@@ -81,6 +106,8 @@ public final class BetterMinecart extends JavaPlugin {
         pluginManager.registerEvents(new KillEntityListener(), this);
 
         pluginManager.registerEvents(new DropItemListener(), this);
+
+        pluginManager.registerEvents(new Monitor(), this);
 
         if(data || mysql){
             Springs.readBlocks(PropertiesEditor.getSaveType());

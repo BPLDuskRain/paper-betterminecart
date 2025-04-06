@@ -1,5 +1,5 @@
 name: betterminecart
-version: '1.6.8-SNAPSHOT'
+version: '1.7.0-SNAPSHOT'
 main: com.duskrainfall.betterminecart.BetterMinecart
 api-version: '1.21'
 commands:
@@ -10,12 +10,18 @@ commands:
 #    #aliases: vs
   vehicle:
     description: 速度反向/停车
-    usage: "/vehicle <back|stop>"
+    usage: "/vehicle [back|stop]"
     aliases: ve
+  monitor:
+    description: 视奸方块
+    usage: "/monitor <clear>"
 permissions:
   spring.create:
     description: 允许玩家创建温泉
     default: op
   spring.remove:
     description: 允许玩家移除温泉
+    default: op
+  monitor.clear:
+    description: 清空视奸方块数据库
     default: op
