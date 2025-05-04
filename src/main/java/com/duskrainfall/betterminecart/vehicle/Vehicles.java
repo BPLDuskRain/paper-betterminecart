@@ -90,8 +90,8 @@ public class Vehicles {
     }
 
     private static void vehicleExplosionAnimation(Vehicle vehicle){
-        vehicle.getWorld().spawnParticle(Particle.EXPLOSION, vehicle.getLocation(),
-                50, 1, 1, 1
+        vehicle.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, vehicle.getLocation(),
+                20, 1, 1, 1
         );
         vehicle.getWorld().playSound(
                 vehicle.getLocation(),

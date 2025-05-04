@@ -3,7 +3,6 @@ package com.duskrainfall.betterminecart.vehicle;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.minecart.RideableMinecart;
@@ -30,14 +29,21 @@ public class VehicleCommand implements CommandExecutor {
         }
         switch(args[0]){
             case "back": case"b":
-                if(vehicle instanceof RideableMinecart || vehicle instanceof Boat){
-                    vehicle.setVelocity(vehicle.getVelocity().multiply(-1));
+                if(vehicle instanceof RideableMinecart minecart){
+                    minecart.setVelocity(minecart.getVelocity().multiply(-1));
                     sender.sendMessage("§a两极反转！");
                 }
                 break;
+            case "reset": case"r":
+                if(vehicle instanceof RideableMinecart minecart){
+                    minecart.setMaxSpeed(0.4);
+                    sender.sendMessage("§b出发前进！");
+                }
+                break;
             case "stop": case "s":
-                if(vehicle instanceof RideableMinecart || vehicle instanceof Boat){
-                    vehicle.setVelocity(vehicle.getVelocity().multiply(0));
+                if(vehicle instanceof RideableMinecart minecart){
+                    minecart.setVelocity(minecart.getVelocity().multiply(0));
+                    minecart.setMaxSpeed(0);
                     sender.sendMessage("§c寸止挑战！");
                 }
                 break;

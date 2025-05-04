@@ -4,6 +4,7 @@ import com.duskrainfall.betterminecart.vehicle.Vehicles;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -166,6 +167,8 @@ public class MinecartMoveListener implements Listener {
         if(minecart.isEmpty()) return;
         if(!(minecart.getPassengers().get(0) instanceof Player)) return;
 
+        if(Minecarts.hookedMap.containsKey(minecart)) return;
+
         if(!minecart.getDerailedVelocityMod().equals(Minecarts.derailedVelocityMod)){
             minecart.setDerailedVelocityMod(Minecarts.derailedVelocityMod);
         }
@@ -202,6 +205,35 @@ public class MinecartMoveListener implements Listener {
             if (!Minecarts.tryLanding(minecart, speed, velocity_y)) {
                 Minecarts.tryStopFly(minecart);
             }
+        }
+    }
+
+    @EventHandler
+    public void OnHooked(VehicleMoveEvent e){
+        if(!(e.getVehicle() instanceof RideableMinecart minecart)) return;
+
+        if(!Minecarts.cars.containsKey(minecart)) return;
+
+        boolean hasGravity = minecart.hasGravity();
+        double headMaxSpeed = minecart.getMaxSpeed();
+        Vector headVelocity = minecart.getVelocity();
+        Location headLocation = minecart.getLocation().subtract(headVelocity);
+        double speed = Minecarts.getSpeed(e);
+        for(Entity entity : Minecarts.cars.get(minecart)){
+            if(!entity.isValid()) continue;
+
+            entity.setGravity(hasGravity);
+            if(entity instanceof RideableMinecart hooking){
+                hooking.setMaxSpeed(headMaxSpeed);
+            }
+
+            Location myLocation = entity.getLocation().add(headVelocity);
+            Vector vector = new Vector(
+                    headLocation.x() - myLocation.x(),
+                    headLocation.y() - myLocation.y(),
+                    headLocation.z() - myLocation.z()
+            );
+            entity.setVelocity(headVelocity.add(vector.multiply(speed/3)));
         }
     }
 }

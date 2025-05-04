@@ -12,6 +12,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Minecarts extends Vehicles {
     public final static double MAX = 1.6d;
@@ -42,6 +44,8 @@ public class Minecarts extends Vehicles {
 
     private final static int MOVE_SOUND_CD = 20;
     public final static HashMap<Minecart, Integer> moveSoundCds = new HashMap<>();
+    public final static ConcurrentHashMap<Entity, RideableMinecart> hookedMap = new ConcurrentHashMap<>();
+    public final static ConcurrentHashMap<RideableMinecart, List<Entity>> cars = new ConcurrentHashMap<>();
 
 //    public static void soundOnRail(RideableMinecart minecart, double speed){
 //        if(moveSoundCds.containsKey(minecart)){
@@ -274,7 +278,12 @@ public class Minecarts extends Vehicles {
     }
     public static void landing(RideableMinecart minecart, double speed){
         minecart.setFallDistance(0);// 对于坐在矿车上摔落的情况，是按照矿车掉落高度计算
-        //minecart.getPassengers().get(0).setFallDistance(0);
+        if(Minecarts.cars.containsKey(minecart)){
+            for(Entity entity : Minecarts.cars.get(minecart)){
+                if(!entity.isValid()) continue;
+                entity.setFallDistance(0);
+            }
+        }
 
         minecart.setFlyingVelocityMod(flyingVelocityMod_land);
         if(speed > TO_FLY){

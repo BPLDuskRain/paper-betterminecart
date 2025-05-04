@@ -15,6 +15,7 @@ public class VehicleTabCompleter implements TabCompleter {
         List<String> complication = new ArrayList<>();
         if(args.length == 1){
             complication.add("back");
+            complication.add("reset");
             complication.add("stop");
         }
 
