@@ -10,6 +10,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerFishEvent;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class MinecartConnectListener implements Listener {
     @EventHandler
@@ -26,14 +27,28 @@ public class MinecartConnectListener implements Listener {
                 Entity entity = player.getVehicle();
                 if(entity != null){
                     if(entity.equals(minecart)) {
-                        player.sendActionBar(Component.text("编组失败", NamedTextColor.RED));
+                        player.sendActionBar(Component.text("编组失败：不能和自己编组", NamedTextColor.RED));
                         return;
                     }
-                    Minecarts.hookedMap.put(entity, minecart);
+
+                    if(Minecarts.hookedMap.containsKey(entity)){
+                        player.sendActionBar(Component.text("编组失败：已经编组到列车", NamedTextColor.RED));
+                        return;
+                    }
+
                     if(!Minecarts.cars.containsKey(minecart)){
                         Minecarts.cars.put(minecart, new ArrayList<>());
                     }
-                    Minecarts.cars.get(minecart).add(entity);
+
+                    List<Entity> list = Minecarts.cars.get(minecart);
+                    if(list.size() < Minecarts.MAX_CAR_NUM){
+                        list.add(entity);
+                    }
+                    else{
+                        player.sendActionBar(Component.text("编组失败：单机编组数量过大", NamedTextColor.RED));
+                        return;
+                    }
+                    Minecarts.hookedMap.put(entity, minecart);
                 }
                 player.sendActionBar(Component.text("编组成功", NamedTextColor.GREEN));
             }

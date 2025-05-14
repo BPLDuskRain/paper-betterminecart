@@ -83,7 +83,7 @@ public class MinecartMoveListener implements Listener {
             if (!(passenger instanceof Player player)) {
                 continue;
             }
-            player.sendActionBar(Component.text("当前平面速率/速率为 "
+            player.sendActionBar(Component.text("当前速度信息："
                     + String.format("%.2f", squaredSpeed) + '/'
                     + String.format("%.2f", speed) + '('
                     + String.format("%.2f", velocity.getX()) + ' '
@@ -110,7 +110,7 @@ public class MinecartMoveListener implements Listener {
         //下降率过大
         else if(y < Minecarts.LAND_MAX_Y){
             bossBar.setColor(BarColor.RED);
-            bossBar.setProgress(Math.min(Minecarts.LAND_MAX_Y - y , 1));
+            bossBar.setProgress(Math.min(- Minecarts.LAND_MAX_Y - y , 1));
             bossBar.setTitle("§c§l下降率过大 PULL UP!");
 
             minecart.getWorld().playSound(
@@ -136,7 +136,7 @@ public class MinecartMoveListener implements Listener {
                 }
                 else {
                     bossBar.setColor(BarColor.RED);
-                    bossBar.setProgress(2 - (speed / Minecarts.TO_FALL));
+                    bossBar.setProgress(Math.min(1, speed / Minecarts.MAX));
                     bossBar.setTitle("§c§l您即将失速，请小心");
 
                     minecart.getWorld().playSound(

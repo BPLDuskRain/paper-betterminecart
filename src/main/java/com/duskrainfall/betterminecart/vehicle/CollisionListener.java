@@ -47,6 +47,18 @@ public class CollisionListener implements Listener {
 
         if(vehicleEntity instanceof RideableMinecart minecart){
             Entity entity_crushed = e.getEntity();
+
+            if(Minecarts.hookedMap.containsKey(minecart)){
+                e.setCancelled(true);
+                return;
+            }
+            if(entity_crushed instanceof RideableMinecart train_crushed){
+                if(Minecarts.cars.containsKey(train_crushed) || Minecarts.hookedMap.containsKey(train_crushed)){
+                    e.setCancelled(true);
+                    return;
+                }
+            }
+
             switch (entity_crushed) {
                 case Minecart minecart_crushed -> Minecarts.minecartCrushed(minecart, minecart_crushed);
                 case Boat boat -> Minecarts.boatCrushed(minecart, boat);

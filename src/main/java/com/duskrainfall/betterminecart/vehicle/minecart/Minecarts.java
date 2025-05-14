@@ -44,6 +44,9 @@ public class Minecarts extends Vehicles {
 
     private final static int MOVE_SOUND_CD = 20;
     public final static HashMap<Minecart, Integer> moveSoundCds = new HashMap<>();
+
+    public final static int MAX_CAR_NUM = 8;
+    public final static int MAX_CAR_LENGTH = 8;
     public final static ConcurrentHashMap<Entity, RideableMinecart> hookedMap = new ConcurrentHashMap<>();
     public final static ConcurrentHashMap<RideableMinecart, List<Entity>> cars = new ConcurrentHashMap<>();
 
@@ -126,23 +129,25 @@ public class Minecarts extends Vehicles {
         );
     }
     public static void maxSpeedUp(RideableMinecart minecart, Player player){
-        if(minecart.getMaxSpeed() >= MAX) {
+        double maxSpeed = minecart.getMaxSpeed();
+        if(maxSpeed == 0){
+            player.sendActionBar(Component.text("正在停车，请解除制动或等待机车启动", NamedTextColor.RED));
+        }
+        else if(maxSpeed >= MAX) {
             minecart.setMaxSpeed(MAX);
             player.sendActionBar(Component.text("已经解放全部速度限制", NamedTextColor.RED));
         }
         else{
             if(Vehicles.controlCooling(player, "矿车速度解放")) return;
 
-            minecart.setMaxSpeed(minecart.getMaxSpeed()*2);
+            minecart.setMaxSpeed(maxSpeed*=2);
             if(minecart.hasGravity()){
                 player.sendActionBar(Component.text("载具最大单向速率已经增加到 "
-                        + Math.min(minecart.getMaxSpeed(), MAX_RAIL)
-                        + " block/tick", NamedTextColor.AQUA));
+                        + Math.min(maxSpeed, MAX_RAIL) + " block/tick", NamedTextColor.AQUA));
             }
             else{
                 player.sendActionBar(Component.text("载具最大单向速率已经增加到 "
-                        + minecart.getMaxSpeed()
-                        + " block/tick", NamedTextColor.AQUA));
+                        + maxSpeed + " block/tick", NamedTextColor.AQUA));
             }
             maxSpeedUpAnimation(minecart);
         }
@@ -169,19 +174,49 @@ public class Minecarts extends Vehicles {
                 0.6f,
                 1.0f
         );
+        minecart.getWorld().playSound(
+                minecart.getLocation(),
+                Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE,
+                0.8f,
+                1.0f
+        );
     }
     public static void maxSpeedDn(RideableMinecart minecart, Player player){
-        if(minecart.getMaxSpeed() <= MIN) {
+        double maxSpeed = minecart.getMaxSpeed();
+        if(maxSpeed == 0){
+            player.sendActionBar(Component.text("正在停车，请解除制动或等待机车启动", NamedTextColor.RED));
+        }
+        else if(maxSpeed <= MIN) {
             minecart.setMaxSpeed(MIN);
             player.sendActionBar(Component.text("已经启用全部速度限制", NamedTextColor.RED));
         }
         else{
             if(Vehicles.controlCooling(player, "矿车速度限制")) return;
 
-            minecart.setMaxSpeed(minecart.getMaxSpeed()/2);
+            minecart.setMaxSpeed(maxSpeed/=2);
             player.sendActionBar(Component.text("载具最大单向速率已经限制到 "
-                    + minecart.getMaxSpeed() + " block/tick", NamedTextColor.AQUA));
+                    + maxSpeed + " block/tick", NamedTextColor.AQUA));
             maxSpeedDnAnimation(minecart);
+        }
+    }
+
+    public static void back(RideableMinecart minecart){
+        minecart.setVelocity(minecart.getVelocity().multiply(-1));
+    }
+    public static void reset(RideableMinecart minecart){
+        minecart.setMaxSpeed(0.4);
+    }
+    public static void stop(RideableMinecart minecart, int depth){
+        minecart.setVelocity(minecart.getVelocity().multiply(0));
+        minecart.setMaxSpeed(0);
+
+        if(cars.containsKey(minecart)){
+            for(Entity entity : cars.get(minecart)){
+                if(!(entity instanceof RideableMinecart minecartCar)) continue;
+                if(depth < MAX_CAR_LENGTH){
+                    stop(minecartCar, depth + 1);
+                }
+            }
         }
     }
 
