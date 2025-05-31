@@ -11,6 +11,10 @@ import org.bukkit.entity.Vehicle;
 import org.bukkit.util.Vector;
 
 public class Boats extends Vehicles {
+    public static void magnet(Boat boat, Player player){
+
+    }
+
     public static void jump(Boat boat, Player player){
         switch(boat.getStatus()){
             case Boat.Status.ON_LAND -> {
@@ -23,7 +27,10 @@ public class Boats extends Vehicles {
                 if(Vehicles.controlCooling(player, "立体机动装置")) return;
 
                 Vector velocity = boat.getVelocity();
-                boat.setVelocity(velocity.setY(velocity.getY() + 1));
+                double y = velocity.getY() + 1;
+                if(Double.isFinite(y)){
+                    boat.setVelocity(velocity.setY(y));
+                }
                 boat.getWorld().playSound(
                         boat.getLocation(),
                         Sound.ENTITY_GENERIC_SPLASH,

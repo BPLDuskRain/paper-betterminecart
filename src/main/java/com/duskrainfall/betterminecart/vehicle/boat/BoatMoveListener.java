@@ -36,7 +36,7 @@ public class BoatMoveListener implements Listener {
             if(!(passenger instanceof Player player)){
                 continue;
             }
-            player.sendActionBar(Component.text("当前平面速率/速率为 "
+            player.sendActionBar(Component.text("当前速度信息："
                             + String.format("%.2f", squaredSpeed) + '/'
                             + String.format("%.2f", speed) + '('
                             + String.format("%.2f", velocity.getX()) + ' '

@@ -43,6 +43,7 @@ public class DriveListener implements Listener {
             case Boat boat -> {
                 switch (action) {
                     case Action.LEFT_CLICK_AIR, Action.LEFT_CLICK_BLOCK -> {
+                        Boats.magnet(boat, player);
                         e.setCancelled(true);
                     }
                     case Action.RIGHT_CLICK_AIR, Action.RIGHT_CLICK_BLOCK -> {

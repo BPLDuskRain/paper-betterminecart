@@ -16,18 +16,17 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Minecarts extends Vehicles {
-    public final static double MAX = 1.6d;
-    public final static double MAX_RAIL = 1.5d;
+    public final static double MAX = 3.2d;
     public final static double MIN = 0.05d;
     public final static double LAND_MAX_Y = -0.2d;
     public final static double TO_FLY = 0.6d;
-    public final static double TO_FALL = 0.2d;
+    public final static double TO_FALL = 0.4d;
 
     public final static int MAX_HEIGHT = 512;
 
     public final static float ANGLE_SQUARE = 90.0f;
-    public final static double CHANGE_SQUARE = 0.0001d;
-    public final static double CHANGE_HEIGHT = 0.00005d;
+    public final static double CHANGE_SQUARE = 0.00016d;
+    public final static double CHANGE_HEIGHT = 0.00006d;
 
     public final static float EAST = 90f;
     public final static float SOUTH = 180f;
@@ -40,7 +39,7 @@ public class Minecarts extends Vehicles {
     public final static Vector flyingVelocityMod_up = new Vector(0.995d, 0.99d, 0.995d);
     public final static Vector flyingVelocityMod_land = new Vector(0.99d, 0.8d, 0.99d);
 
-    public final static Vector derailedVelocityMod = new Vector(0.9d, 0.9d, 0.9d);
+    public final static Vector derailedVelocityMod = new Vector(0.98d, 0.98d, 0.98d);
 
     private final static int MOVE_SOUND_CD = 20;
     public final static HashMap<Minecart, Integer> moveSoundCds = new HashMap<>();
@@ -141,14 +140,8 @@ public class Minecarts extends Vehicles {
             if(Vehicles.controlCooling(player, "矿车速度解放")) return;
 
             minecart.setMaxSpeed(maxSpeed*=2);
-            if(minecart.hasGravity()){
-                player.sendActionBar(Component.text("载具最大单向速率已经增加到 "
-                        + Math.min(maxSpeed, MAX_RAIL) + " block/tick", NamedTextColor.AQUA));
-            }
-            else{
-                player.sendActionBar(Component.text("载具最大单向速率已经增加到 "
-                        + maxSpeed + " block/tick", NamedTextColor.AQUA));
-            }
+            player.sendActionBar(Component.text("载具最大单向速率已经增加到 "
+                    + maxSpeed + " block/tick", NamedTextColor.AQUA));
             maxSpeedUpAnimation(minecart);
         }
     }
@@ -342,7 +335,7 @@ public class Minecarts extends Vehicles {
             }
         }
     }
-    public static void flyControl(RideableMinecart minecart){
+    public static void speedControl(RideableMinecart minecart){
         if(!(minecart.getPassengers().get(0) instanceof Player player)) return;
         if(player.getInventory().getItemInMainHand().getType() != Minecarts.CONTROL_ITEM) return;
 
@@ -374,16 +367,23 @@ public class Minecarts extends Vehicles {
         minecart.setVelocity(velocity);
     }
 
-//    public static void vehicleExplosion(RideableMinecart minecart){
-//        Minecarts.soundOver(minecart);
-//        Vehicles.vehicleExplosion(minecart);
-//    }
+    public static void vehicleExplosion(RideableMinecart minecart){
+        if(cars.containsKey(minecart)){
+            for(var car : cars.get(minecart)){
+                car.setGravity(true);
+            }
+        }
+        Vehicles.vehicleExplosion(minecart);
+    }
 
     public static void entityCrushed(RideableMinecart minecart, Entity entity){
         if(entity.isInsideVehicle()) return;
 
         var velocity = minecart.getVelocity();
-        entity.setVelocity(velocity.setY(Math.abs(velocity.getY()) + 1).multiply(2));
+        var newVelocity = velocity.setY(Math.abs(velocity.getY()) + 1).multiply(2);
+        if(Double.isFinite(newVelocity.getX()) && Double.isFinite(newVelocity.getZ()) && Double.isFinite(newVelocity.getY())){
+            entity.setVelocity(newVelocity);
+        }
     }
 
     private static void vehicleCrushedSound(RideableMinecart minecart){
@@ -416,23 +416,26 @@ public class Minecarts extends Vehicles {
         if(Vehicles.crushCooling(minecart_crushed)) return;
 
         var velocity = minecart.getVelocity();
-        minecart_crushed.setMaxSpeed(
-            Math.min(
-                Math.max(
-                    minecart_crushed.getMaxSpeed(),
-                    2 * Math.max(
-                        Math.max(
-                            Math.abs(velocity.getX()),
-                            Math.abs(velocity.getZ())
-                        ),
-                        Math.abs(velocity.getY())
+        var newVelocity = velocity.multiply(2);
+        if(Double.isFinite(newVelocity.getX()) && Double.isFinite(newVelocity.getZ()) && Double.isFinite(newVelocity.getY())){
+            minecart_crushed.setMaxSpeed(
+                    Math.min(
+                            Math.max(
+                                    minecart_crushed.getMaxSpeed(),
+                                    2 * Math.max(
+                                            Math.max(
+                                                    Math.abs(velocity.getX()),
+                                                    Math.abs(velocity.getZ())
+                                            ),
+                                            Math.abs(velocity.getY())
+                                    )
+                            ),
+                            MAX * 2
                     )
-                ),
-                MAX * 2
-            )
-        );
+            );
 
-        minecart_crushed.setVelocity(velocity.multiply(2));
+            minecart_crushed.setVelocity(newVelocity);
+        }
     }
     public static void boatCrushed(RideableMinecart minecart, Boat boat){
         if(boat.isInsideVehicle()) return;
@@ -442,7 +445,10 @@ public class Minecarts extends Vehicles {
         if(Vehicles.crushCooling(boat)) return;
 
         var velocity = minecart.getVelocity();
-        boat.setVelocity(velocity.setY(Math.abs(velocity.getY()) + 1).multiply(2));
+        var newVelocity = velocity.setY(Math.abs(velocity.getY()) + 1).multiply(2);
+        if(Double.isFinite(newVelocity.getX()) && Double.isFinite(newVelocity.getZ()) && Double.isFinite(newVelocity.getY())){
+            boat.setVelocity(newVelocity);
+        }
     }
 
     private static void livingEntityCrushedSound(RideableMinecart minecart){
@@ -470,7 +476,10 @@ public class Minecarts extends Vehicles {
 
         var velocity = minecart.getVelocity();
         if(livingEntity.getType() != EntityType.IRON_GOLEM){
-            livingEntity.setVelocity(velocity.setY(Math.abs(velocity.getY()) + 1).multiply(2));
+            var newVelocity = velocity.setY(Math.abs(velocity.getY()) + 1).multiply(2);
+            if(Double.isFinite(newVelocity.getX()) && Double.isFinite(newVelocity.getZ()) && Double.isFinite(newVelocity.getY())){
+                livingEntity.setVelocity(newVelocity);
+            }
         }
         Vehicles.imbalance(livingEntity);
     }

@@ -1,5 +1,5 @@
 name: betterminecart
-version: '1.7.2-SNAPSHOT'
+version: '1.7.3-SNAPSHOT'
 main: com.duskrainfall.betterminecart.BetterMinecart
 api-version: '1.21'
 commands:
@@ -9,8 +9,8 @@ commands:
 #    #permission:
 #    #aliases: vs
   vehicle:
-    description: 速度反向/停车
-    usage: "/vehicle [back|stop]"
+    description: 速度反向/停车/重启
+    usage: "/vehicle [back|stop|reset]"
     aliases: ve
   monitor:
     description: 视奸方块

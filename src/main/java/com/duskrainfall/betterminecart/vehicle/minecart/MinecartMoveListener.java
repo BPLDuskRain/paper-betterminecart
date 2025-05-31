@@ -70,6 +70,7 @@ public class MinecartMoveListener implements Listener {
         BossBar bossBar = Vehicles.speedStateBar.get(minecart);
 
         double speed = Minecarts.getSpeed(e);
+        double maxSpeed = minecart.getMaxSpeed();
         if(speed > Minecarts.MAX * 2) {
             Minecarts.vehicleExplosion(minecart);
             return;
@@ -124,9 +125,9 @@ public class MinecartMoveListener implements Listener {
             //无重力->即将失速
             if(Minecarts.TO_FALL <= speed && speed < Minecarts.TO_FALL + 0.2d){
                 if (minecart.getFlyingVelocityMod().equals(Minecarts.flyingVelocityMod_land)) {
-                    bossBar.setColor(BarColor.BLUE);
+                    bossBar.setColor(BarColor.GREEN);
                     bossBar.setProgress(2 - (speed / Minecarts.TO_FALL));
-                    bossBar.setTitle("§b您即将降落，请注意");
+                    bossBar.setTitle("§a您即将降落，请注意");
 
                     minecart.getWorld().playSound(
                             minecart.getLocation(),
@@ -136,7 +137,7 @@ public class MinecartMoveListener implements Listener {
                 }
                 else {
                     bossBar.setColor(BarColor.RED);
-                    bossBar.setProgress(Math.min(1, speed / Minecarts.MAX));
+                    bossBar.setProgress(Math.min(1, speed / maxSpeed));
                     bossBar.setTitle("§c§l您即将失速，请小心");
 
                     minecart.getWorld().playSound(
@@ -148,15 +149,15 @@ public class MinecartMoveListener implements Listener {
             }
             //无重力->正常
             else{
-                bossBar.setColor(BarColor.GREEN);
-                bossBar.setProgress(Math.min(1, speed / Minecarts.MAX));
-                bossBar.setTitle("§a顺风顺水，一切正常");
+                bossBar.setColor(BarColor.BLUE);
+                bossBar.setProgress(Math.min(1, speed / maxSpeed));
+                bossBar.setTitle("§b顺风顺水，一切正常");
             }
         }
         else{
             //有重力
             bossBar.setColor(BarColor.GREEN);
-            bossBar.setProgress(Math.min(1, speed / Minecarts.MAX_RAIL));
+            bossBar.setProgress(Math.min(1, speed / maxSpeed));
             bossBar.setTitle("§a祝道岔好，一切正常");
         }
     }
@@ -169,19 +170,17 @@ public class MinecartMoveListener implements Listener {
 
         if(Minecarts.hookedMap.containsKey(minecart)) return;
 
-        if(!minecart.getDerailedVelocityMod().equals(Minecarts.derailedVelocityMod)){
-            minecart.setDerailedVelocityMod(Minecarts.derailedVelocityMod);
-        }
-
         double speed = Minecarts.getSpeed(e);
 
         if(minecart.hasGravity()){
 //            Minecarts.soundOnRail(minecart, speed);
+            Minecarts.speedControl(minecart);
+            minecart.setDerailedVelocityMod(Minecarts.derailedVelocityMod);
             if(speed > Minecarts.TO_FLY) Minecarts.tryStartFly(minecart, speed);
         }
         else {
             if(minecart.getLocation().getY() > Minecarts.MAX_HEIGHT){
-                Vehicles.vehicleExplosion(minecart);
+                Minecarts.vehicleExplosion(minecart);
                 return;
             }
 
@@ -201,7 +200,7 @@ public class MinecartMoveListener implements Listener {
                 Minecarts.tryStartFly(minecart, speed);
             }
 
-            Minecarts.flyControl(minecart);
+            Minecarts.speedControl(minecart);
             if (!Minecarts.tryLanding(minecart, speed, velocity_y)) {
                 Minecarts.tryStopFly(minecart);
             }
@@ -216,24 +215,27 @@ public class MinecartMoveListener implements Listener {
 
         boolean hasGravity = minecart.hasGravity();
         double headMaxSpeed = minecart.getMaxSpeed();
-        Vector headVelocity = minecart.getVelocity();
-        Location headLocation = minecart.getLocation().subtract(headVelocity);
-        double speed = Minecarts.getSpeed(e);
+        Vector headVelocity = Minecarts.getVelocity(e);
+        double length = headVelocity.length();
+        Vector offset =  headVelocity.clone().multiply(length > 0.6 ? 1.2/length : 3);
+        Location headLocation = minecart.getLocation().subtract(offset);
         for(Entity entity : Minecarts.cars.get(minecart)){
             if(!entity.isValid()) continue;
 
             entity.setGravity(hasGravity);
             if(entity instanceof RideableMinecart hooking){
-                hooking.setMaxSpeed(headMaxSpeed);
+                hooking.setMaxSpeed(hasGravity ? headMaxSpeed + 0.1 : headMaxSpeed);
+                hooking.setDerailedVelocityMod(Minecarts.derailedVelocityMod);
             }
 
-            Location myLocation = entity.getLocation().add(headVelocity);
-            Vector vector = new Vector(
+            Location myLocation = entity.getLocation().add(offset);
+            Vector vector_land = new Vector(
                     headLocation.x() - myLocation.x(),
                     headLocation.y() - myLocation.y(),
                     headLocation.z() - myLocation.z()
             );
-            entity.setVelocity(headVelocity.add(vector.multiply(speed/3)));
+            Vector vector_fly = vector_land.clone().multiply(0.5);
+            entity.setVelocity(headVelocity.add(hasGravity ? vector_land : vector_fly));
         }
     }
 }
