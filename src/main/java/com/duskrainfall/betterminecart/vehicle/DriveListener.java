@@ -9,17 +9,46 @@ import org.bukkit.entity.minecart.RideableMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 public class DriveListener implements Listener {
     @EventHandler
-    public void onClick(PlayerInteractEvent e){
-        Player player = e.getPlayer();
+    public void OnHit(EntityDamageByEntityEvent e){
+        if(!(e.getDamager() instanceof Player player)) return;
+
+        if(!player.isInsideVehicle()) return;
         ItemStack item_main = player.getInventory().getItemInMainHand();
 
         if(item_main.getType() != Minecarts.CONTROL_ITEM) return;
+
+        Entity vehicleEntity = player.getVehicle();
+        if(vehicleEntity == null) return;
+
+        switch(vehicleEntity){
+            //左击加速
+            case RideableMinecart minecart -> {
+                Minecarts.maxSpeedUp(minecart, player);
+                e.setCancelled(true);
+            }
+            case Boat boat -> {
+                Boats.magnet(boat, player);
+                e.setCancelled(true);
+            }
+            default -> {}
+        }
+    }
+
+    @EventHandler
+    public void onClick(PlayerInteractEvent e){
+        Player player = e.getPlayer();
         if(!player.isInsideVehicle()) return;
+        ItemStack item_main = player.getInventory().getItemInMainHand();
+
+        if(item_main.getType() != Minecarts.CONTROL_ITEM) return;
 
         Entity vehicleEntity = player.getVehicle();
         if(vehicleEntity == null) return;
@@ -34,6 +63,7 @@ public class DriveListener implements Listener {
                         e.setCancelled(true);
                     }
                     case Action.RIGHT_CLICK_AIR -> {
+                        if(e.getHand() == EquipmentSlot.OFF_HAND) return;
                         Minecarts.maxSpeedDn(minecart, player);
                         e.setCancelled(true);
                     }
@@ -47,6 +77,7 @@ public class DriveListener implements Listener {
                         e.setCancelled(true);
                     }
                     case Action.RIGHT_CLICK_AIR, Action.RIGHT_CLICK_BLOCK -> {
+                        if(e.getHand() == EquipmentSlot.OFF_HAND) return;
                         Boats.jump(boat, player);
                         e.setCancelled(true);
                     }

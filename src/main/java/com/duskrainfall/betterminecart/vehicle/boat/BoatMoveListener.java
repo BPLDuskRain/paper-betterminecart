@@ -13,18 +13,23 @@ import org.bukkit.util.Vector;
 import java.util.List;
 
 public class BoatMoveListener implements Listener {
-    int boatCount = 0;
     @EventHandler
     public void onBoat_speed(VehicleMoveEvent e){
         if(!(e.getVehicle() instanceof Boat boat)) return;
         if(boat.isEmpty()) return;
         if(!(boat.getPassengers().get(0) instanceof Player)) return;
 
-        if(boatCount > 0){
-            boatCount--;
-            return;
+        if(!Boats.listenGapMap.containsKey(boat)){
+            Boats.listenGapMap.put(boat, 0);
         }
-        boatCount = Boats.LISTEN_GAP;
+        else{
+            int boatCount = Boats.listenGapMap.get(boat);
+            if(boatCount > 0){
+                Boats.listenGapMap.put(boat, boatCount-1);
+                return;
+            }
+            Boats.listenGapMap.put(boat, Boats.LISTEN_GAP);
+        }
 
         double speed = Boats.getSpeed(e);
         double squaredSpeed = Boats.getSquaredSpeed(e);

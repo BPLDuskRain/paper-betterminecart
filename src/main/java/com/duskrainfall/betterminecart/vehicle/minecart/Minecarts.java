@@ -24,8 +24,8 @@ public class Minecarts extends Vehicles {
 
     public final static int MAX_HEIGHT = 512;
 
-    public final static float ANGLE_SQUARE = 90.0f;
-    public final static double CHANGE_SQUARE = 0.00016d;
+    public final static float ANGLE_SIDE = 120.0f;
+    public final static double CHANGE_SQUARE = 0.00015d;
     public final static double CHANGE_HEIGHT = 0.00006d;
 
     public final static float EAST = 90f;
@@ -345,21 +345,21 @@ public class Minecarts extends Vehicles {
 
         var velocity = minecart.getVelocity();
 
-        if(EAST - ANGLE_SQUARE <= yaw && yaw <= EAST + ANGLE_SQUARE){
+        if(EAST - ANGLE_SIDE <= yaw && yaw <= EAST + ANGLE_SIDE){
             //x+
-            velocity.setX(velocity.getX() + (ANGLE_SQUARE - Math.abs(yaw - EAST)) * CHANGE_SQUARE);
+            velocity.setX(velocity.getX() + (ANGLE_SIDE - Math.abs(yaw - EAST)) * CHANGE_SQUARE);
         }
-        if(SOUTH - ANGLE_SQUARE <= yaw && yaw <= SOUTH + ANGLE_SQUARE){
+        if(SOUTH - ANGLE_SIDE <= yaw && yaw <= SOUTH + ANGLE_SIDE){
             //z+
-            velocity.setZ(velocity.getZ() + (ANGLE_SQUARE - Math.abs(yaw - SOUTH)) * CHANGE_SQUARE);
+            velocity.setZ(velocity.getZ() + (ANGLE_SIDE - Math.abs(yaw - SOUTH)) * CHANGE_SQUARE);
         }
-        if(WEST - ANGLE_SQUARE <= yaw && yaw <= WEST + ANGLE_SQUARE){
+        if(WEST - ANGLE_SIDE <= yaw && yaw <= WEST + ANGLE_SIDE){
             //x-
-            velocity.setX(velocity.getX() - (ANGLE_SQUARE - Math.abs(yaw - WEST)) * CHANGE_SQUARE);
+            velocity.setX(velocity.getX() - (ANGLE_SIDE - Math.abs(yaw - WEST)) * CHANGE_SQUARE);
         }
-        if((NORTH - ANGLE_SQUARE <= yaw && yaw <= NORTH) || (0 <= yaw && yaw <= 0 + ANGLE_SQUARE)){
+        if((NORTH - ANGLE_SIDE <= yaw && yaw <= NORTH) || (0 <= yaw && yaw <= 0 + ANGLE_SIDE)){
             //z-
-            velocity.setZ(velocity.getZ() - (ANGLE_SQUARE - Math.min(Math.abs(yaw - NORTH), Math.abs(yaw - 0))) * CHANGE_SQUARE);
+            velocity.setZ(velocity.getZ() - (ANGLE_SIDE - Math.min(Math.abs(yaw - NORTH), Math.abs(yaw - 0))) * CHANGE_SQUARE);
         }
 
         velocity.setY(velocity.getY() - pitch * CHANGE_HEIGHT);//负数仰角加，正数俯角减

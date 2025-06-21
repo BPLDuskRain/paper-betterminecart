@@ -53,18 +53,23 @@ public class MinecartMoveListener implements Listener {
         ));
     }
 
-    int minecartCount = 0;
     @EventHandler
     public void onMinecart_speed(VehicleMoveEvent e){
         if(!(e.getVehicle() instanceof RideableMinecart minecart)) return;
         if(minecart.isEmpty()) return;
         if(!(minecart.getPassengers().get(0) instanceof Player)) return;
 
-        if(minecartCount > 0){
-            minecartCount--;
-            return;
+        if(!Minecarts.listenGapMap.containsKey(minecart)){
+            Minecarts.listenGapMap.put(minecart, 0);
         }
-        minecartCount = minecart.hasGravity() ? Minecarts.LISTEN_GAP : Minecarts.LISTEN_GAP / 2;
+        else{
+            int minecartCount = Minecarts.listenGapMap.get(minecart);
+            if(minecartCount > 0){
+                Minecarts.listenGapMap.put(minecart, minecartCount-1);
+                return;
+            }
+            Minecarts.listenGapMap.put(minecart, minecart.hasGravity() ? Minecarts.LISTEN_GAP : Minecarts.LISTEN_GAP / 2);
+        }
 
         if(!Vehicles.speedStateBar.containsKey(minecart)) return;
         BossBar bossBar = Vehicles.speedStateBar.get(minecart);

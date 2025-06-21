@@ -21,6 +21,7 @@ public class Vehicles {
     public final static Material CONTROL_ITEM = Material.RECOVERY_COMPASS;
 
     public final static int LISTEN_GAP = 20;
+    public final static ConcurrentHashMap<Vehicle, Integer> listenGapMap = new ConcurrentHashMap<>();
 
     public final static HashMap<Vehicle, BossBar> speedStateBar = new HashMap<>();
 

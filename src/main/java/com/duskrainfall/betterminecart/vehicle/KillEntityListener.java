@@ -25,6 +25,7 @@ public class KillEntityListener implements Listener {
     @EventHandler
     public void destroyVehicle(VehicleDestroyEvent e){
         Vehicle vehicle = e.getVehicle();
+        Vehicles.listenGapMap.remove(vehicle);
         Vehicles.crushedCds.remove(vehicle);
         Vehicles.crushedSoundCds.remove(vehicle);
         if(Vehicles.speedStateBar.containsKey(vehicle)){
