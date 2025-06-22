@@ -30,7 +30,7 @@ public class MinecartMoveListener implements Listener {
         if(!(e.getVehicle() instanceof RideableMinecart minecart)) return;
 
         if(!Vehicles.speedStateBar.containsKey(minecart)){
-            BossBar bossBar = Bukkit.createBossBar("§e欢迎使用BetterMinecart！", BarColor.GREEN, BarStyle.SOLID);
+            BossBar bossBar = Bukkit.createBossBar("§e欢迎使用BetterMinecart！", BarColor.GREEN, BarStyle.SEGMENTED_20);
             Vehicles.speedStateBar.put(minecart, bossBar);
         }
 
@@ -71,9 +71,6 @@ public class MinecartMoveListener implements Listener {
             Minecarts.listenGapMap.put(minecart, minecart.hasGravity() ? Minecarts.LISTEN_GAP : Minecarts.LISTEN_GAP / 2);
         }
 
-        if(!Vehicles.speedStateBar.containsKey(minecart)) return;
-        BossBar bossBar = Vehicles.speedStateBar.get(minecart);
-
         double speed = Minecarts.getSpeed(e);
         double maxSpeed = minecart.getMaxSpeed();
         if(speed > Minecarts.MAX * 2) {
@@ -90,14 +87,18 @@ public class MinecartMoveListener implements Listener {
                 continue;
             }
             player.sendActionBar(Component.text("当前速度信息："
-                    + String.format("%.2f", squaredSpeed) + '/'
+                    + String.format("%.2f", squaredSpeed) + ','
                     + String.format("%.2f", speed) + '('
                     + String.format("%.2f", velocity.getX()) + ' '
                     + String.format("%.2f", velocity.getY()) + ' '
                     + String.format("%.2f", velocity.getZ()) + ')'
+                    + '/' + String.format("%.2f", maxSpeed)
                     + " block/tick"
                     , NamedTextColor.GREEN));
         }
+
+        if(!Vehicles.speedStateBar.containsKey(minecart)) return;
+        BossBar bossBar = Vehicles.speedStateBar.get(minecart);
 
         double height = minecart.getLocation().getY();
         double y = velocity.getY();
@@ -142,7 +143,7 @@ public class MinecartMoveListener implements Listener {
                 }
                 else {
                     bossBar.setColor(BarColor.RED);
-                    bossBar.setProgress(Math.min(1, speed / maxSpeed));
+                    bossBar.setProgress(Math.min(1, speed / Minecarts.MAX));
                     bossBar.setTitle("§c§l您即将失速，请小心");
 
                     minecart.getWorld().playSound(
@@ -155,14 +156,14 @@ public class MinecartMoveListener implements Listener {
             //无重力->正常
             else{
                 bossBar.setColor(BarColor.BLUE);
-                bossBar.setProgress(Math.min(1, speed / maxSpeed));
+                bossBar.setProgress(Math.min(1, speed / Minecarts.MAX));
                 bossBar.setTitle("§b顺风顺水，一切正常");
             }
         }
         else{
             //有重力
             bossBar.setColor(BarColor.GREEN);
-            bossBar.setProgress(Math.min(1, speed / maxSpeed));
+            bossBar.setProgress(Math.min(1, speed / Minecarts.MAX_RAIL));
             bossBar.setTitle("§a祝道岔好，一切正常");
         }
     }
@@ -228,6 +229,7 @@ public class MinecartMoveListener implements Listener {
             if(!entity.isValid()) continue;
 
             entity.setGravity(hasGravity);
+            entity.setFallDistance(minecart.getFallDistance());
             if(entity instanceof RideableMinecart hooking){
                 hooking.setMaxSpeed(hasGravity ? headMaxSpeed + 0.1 : headMaxSpeed);
                 hooking.setDerailedVelocityMod(Minecarts.derailedVelocityMod);

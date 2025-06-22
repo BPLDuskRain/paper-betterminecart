@@ -1,6 +1,8 @@
 package com.duskrainfall.betterminecart.vehicle;
 
+import com.duskrainfall.betterminecart.vehicle.boat.Boats;
 import com.duskrainfall.betterminecart.vehicle.minecart.Minecarts;
+import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Vehicle;
@@ -41,6 +43,11 @@ public class KillEntityListener implements Listener {
         removeHooked(vehicle);
         // 移除钩子映射
         Minecarts.hookedMap.remove(vehicle);
+
+        if(vehicle instanceof Boat boat){
+            Boats.boatFloatMap.remove(boat);
+            Boats.boatMagnetMap.remove(boat);
+        }
     }
 
     @EventHandler

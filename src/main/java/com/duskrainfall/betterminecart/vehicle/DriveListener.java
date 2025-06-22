@@ -10,14 +10,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 public class DriveListener implements Listener {
     @EventHandler
-    public void OnHit(EntityDamageByEntityEvent e){
+    public void onHit(EntityDamageByEntityEvent e){
         if(!(e.getDamager() instanceof Player player)) return;
 
         if(!player.isInsideVehicle()) return;
@@ -35,7 +34,7 @@ public class DriveListener implements Listener {
                 e.setCancelled(true);
             }
             case Boat boat -> {
-                Boats.magnet(boat, player);
+                Boats.drive(boat, player);
                 e.setCancelled(true);
             }
             default -> {}
@@ -73,12 +72,12 @@ public class DriveListener implements Listener {
             case Boat boat -> {
                 switch (action) {
                     case Action.LEFT_CLICK_AIR, Action.LEFT_CLICK_BLOCK -> {
-                        Boats.magnet(boat, player);
+                        Boats.drive(boat, player);
                         e.setCancelled(true);
                     }
                     case Action.RIGHT_CLICK_AIR, Action.RIGHT_CLICK_BLOCK -> {
                         if(e.getHand() == EquipmentSlot.OFF_HAND) return;
-                        Boats.jump(boat, player);
+                        Boats.move(boat, player);
                         e.setCancelled(true);
                     }
                     default -> {}

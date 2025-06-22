@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Minecarts extends Vehicles {
     public final static double MAX = 3.2d;
+    public final static double MAX_RAIL = 1.5d;
     public final static double MIN = 0.05d;
     public final static double LAND_MAX_Y = -0.2d;
     public final static double TO_FLY = 0.6d;
@@ -40,6 +41,8 @@ public class Minecarts extends Vehicles {
     public final static Vector flyingVelocityMod_land = new Vector(0.99d, 0.8d, 0.99d);
 
     public final static Vector derailedVelocityMod = new Vector(0.98d, 0.98d, 0.98d);
+
+    private final static int MAX_SPEED_CHANGE_CD = 10;
 
     private final static int MOVE_SOUND_CD = 20;
     public final static HashMap<Minecart, Integer> moveSoundCds = new HashMap<>();
@@ -137,7 +140,7 @@ public class Minecarts extends Vehicles {
             player.sendActionBar(Component.text("已经解放全部速度限制", NamedTextColor.RED));
         }
         else{
-            if(Vehicles.controlCooling(player, "矿车速度解放")) return;
+            if(Vehicles.controlCooling(player, "矿车速度解放", MAX_SPEED_CHANGE_CD)) return;
 
             minecart.setMaxSpeed(maxSpeed*=2);
             player.sendActionBar(Component.text("载具最大单向速率已经增加到 "
@@ -148,11 +151,11 @@ public class Minecarts extends Vehicles {
 
     private static void maxSpeedDnAnimation(Minecart minecart){
         minecart.getWorld().spawnParticle(
-                Particle.LAVA, // 粒子类型
-                minecart.getLocation().add(0, 1, 0), // 位置
-                20, // 数量
-                0.5, 0.5, 0.5, // 偏移量
-                0.1 // 速度
+                Particle.LAVA,
+                minecart.getLocation().add(0, 1, 0),
+                20,
+                0.5, 0.5, 0.5,
+                0.1
         );
 
         minecart.getWorld().playSound(
@@ -184,7 +187,7 @@ public class Minecarts extends Vehicles {
             player.sendActionBar(Component.text("已经启用全部速度限制", NamedTextColor.RED));
         }
         else{
-            if(Vehicles.controlCooling(player, "矿车速度限制")) return;
+            if(Vehicles.controlCooling(player, "矿车速度限制", MAX_SPEED_CHANGE_CD)) return;
 
             minecart.setMaxSpeed(maxSpeed/=2);
             player.sendActionBar(Component.text("载具最大单向速率已经限制到 "
@@ -306,12 +309,6 @@ public class Minecarts extends Vehicles {
     }
     public static void landing(RideableMinecart minecart, double speed){
         minecart.setFallDistance(0);// 对于坐在矿车上摔落的情况，是按照矿车掉落高度计算
-        if(Minecarts.cars.containsKey(minecart)){
-            for(Entity entity : Minecarts.cars.get(minecart)){
-                if(!entity.isValid()) continue;
-                entity.setFallDistance(0);
-            }
-        }
 
         minecart.setFlyingVelocityMod(flyingVelocityMod_land);
         if(speed > TO_FLY){
@@ -340,8 +337,8 @@ public class Minecarts extends Vehicles {
         if(player.getInventory().getItemInMainHand().getType() != Minecarts.CONTROL_ITEM) return;
 
         var location = player.getLocation();
-        var yaw = (location.getYaw() + 180) % 360; //偏航角 180南z+ 270西x- +-360北z- 90东x+
-        var pitch = location.getPitch(); //俯仰角 正数俯角负数仰角
+        double yaw = (location.getYaw() + 180) % 360; //偏航角 180南z+ 270西x- +-360北z- 90东x+
+        double pitch = location.getPitch(); //俯仰角 正数俯角负数仰角
 
         var velocity = minecart.getVelocity();
 

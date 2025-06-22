@@ -35,9 +35,6 @@ public class CollisionListener implements Listener {
                 Minecarts.vehicleExplosion(minecart);
             }
         }
-        else if(vehicleEntity instanceof Boat boat){
-
-        }
     }
 
     @EventHandler

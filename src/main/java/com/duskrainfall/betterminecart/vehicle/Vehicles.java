@@ -31,22 +31,21 @@ public class Vehicles {
     private final static int CRUSHED_SOUND_CD = 10;
     public final static ConcurrentHashMap<Vehicle, Integer> crushedSoundCds = new ConcurrentHashMap<>();
 
-    private final static int CONTROL_CD = 10;
     public final static ConcurrentHashMap<Player, Integer> controlCds = new ConcurrentHashMap<>();
 
     public static double getSpeed(VehicleMoveEvent e){
         Location from = e.getFrom();
         Location to = e.getTo();
-        double x = Math.abs(from.getX() - to.getX());
-        double y = Math.abs(from.getY() - to.getY());
-        double z = Math.abs(from.getZ() - to.getZ());
+        double x = to.getX() - from.getX();
+        double y = to.getY() - from.getY();
+        double z = to.getZ() - from.getZ();
         return Math.sqrt(x*x+y*y+z*z);
     }
     public static double getSquaredSpeed(VehicleMoveEvent e){
         Location from = e.getFrom();
         Location to = e.getTo();
-        double x = Math.abs(from.getX() - to.getX());
-        double z = Math.abs(from.getZ() - to.getZ());
+        double x = to.getX() - from.getX();
+        double z = to.getZ() - from.getZ();
         return Math.sqrt(x*x+z*z);
     }
     public static Vector getVelocity(VehicleMoveEvent e){
@@ -58,17 +57,18 @@ public class Vehicles {
         return new Vector(x, y, z);
     }
 
-    public static boolean controlCooling(Player player, String opName){
+    public static boolean controlCooling(Player player, String opName, int cd){
         if(controlCds.containsKey(player)){
             int ticks = player.getTicksLived() - controlCds.get(player);
-            if(ticks < CONTROL_CD){
-                player.sendActionBar(Component.text(opName + "还有 " + (CONTROL_CD - ticks) + " 刻冷却时间！", NamedTextColor.RED));
+            if(ticks < cd){
+                player.sendActionBar(Component.text(opName + "还有 " + (cd - ticks) + " 刻冷却时间！", NamedTextColor.RED));
                 return true;
             }
         }
         controlCds.put(player, player.getTicksLived());
         return false;
     }
+
     public static boolean crushCooling(Entity entity_crushed){
         if(crushedCds.containsKey(entity_crushed)){
             if(entity_crushed.getTicksLived() - crushedCds.get(entity_crushed) < CRUSHED_CD){
@@ -101,15 +101,16 @@ public class Vehicles {
         );
     }
     public static void vehicleExplosion(Vehicle vehicle){
+        var velocity = vehicle.getVelocity();
         for(Entity entity : vehicle.getPassengers()){
             if(entity instanceof Damageable eneity_damageable){
-                var velocity = vehicle.getVelocity();
                 double x = Math.abs(velocity.getX());
                 double y = Math.abs(velocity.getY());
                 double z = Math.abs(velocity.getZ());
                 eneity_damageable.damage(10 * Math.max(Math.max(x, z), y));
                 eneity_damageable.setFireTicks(120);
             }
+            entity.setVelocity(velocity);
         }
         vehicle.eject();
         vehicleExplosionAnimation(vehicle);
