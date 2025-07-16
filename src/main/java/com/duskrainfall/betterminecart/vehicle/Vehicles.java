@@ -1,6 +1,5 @@
 package com.duskrainfall.betterminecart.vehicle;
 
-import com.duskrainfall.betterminecart.spring.Springs;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
@@ -127,7 +126,6 @@ public class Vehicles {
         }
         vehicle.eject();
         vehicleExplosionAnimation(vehicle);
-        Springs.createSpring(vehicle, 1200);
         vehicle.remove();
     }
 
