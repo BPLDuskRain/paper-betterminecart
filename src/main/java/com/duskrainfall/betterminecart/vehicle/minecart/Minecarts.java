@@ -111,22 +111,22 @@ public class Minecarts extends Vehicles {
 
     private static void maxSpeedUpAnimation(Minecart minecart){
         minecart.getWorld().spawnParticle(
-                Particle.FIREWORK, // 粒子类型
-                minecart.getLocation().add(0, 1, 0), // 位置
-                20, // 数量
-                0.5, 0.5, 0.5, // 偏移量
-                0.1 // 速度
+                Particle.FIREWORK,
+                minecart.getLocation(),
+                25,
+                1, 1, 1,
+                0.5
         );
         minecart.getWorld().playSound(
                 minecart.getLocation(),
                 Sound.ENTITY_FIREWORK_ROCKET_LAUNCH,
-                0.7f,
+                0.5f,
                 1.0f
         );
         minecart.getWorld().playSound(
                 minecart.getLocation(),
                 Sound.ENTITY_BREEZE_JUMP,
-                1.0f,
+                0.8f,
                 1.0f
         );
     }
@@ -152,7 +152,7 @@ public class Minecarts extends Vehicles {
     private static void maxSpeedDnAnimation(Minecart minecart){
         minecart.getWorld().spawnParticle(
                 Particle.LAVA,
-                minecart.getLocation().add(0, 1, 0),
+                minecart.getLocation(),
                 20,
                 0.5, 0.5, 0.5,
                 0.1
@@ -161,19 +161,19 @@ public class Minecarts extends Vehicles {
         minecart.getWorld().playSound(
                 minecart.getLocation(),
                 Sound.ENTITY_BREEZE_SHOOT,
-                1.0f,
+                0.6f,
                 0.6f
         );
         minecart.getWorld().playSound(
                 minecart.getLocation(),
                 Sound.ENTITY_IRON_GOLEM_REPAIR,
-                0.6f,
+                0.3f,
                 1.0f
         );
         minecart.getWorld().playSound(
                 minecart.getLocation(),
                 Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE,
-                0.8f,
+                0.4f,
                 1.0f
         );
     }
@@ -201,10 +201,37 @@ public class Minecarts extends Vehicles {
     }
     public static void reset(RideableMinecart minecart){
         minecart.setMaxSpeed(0.4);
+        minecart.getWorld().spawnParticle(
+                Particle.TRIAL_SPAWNER_DETECTION_OMINOUS,
+                minecart.getLocation(),
+                20,
+                0.5, 0.1, 0.5,
+                0.2
+        );
+        minecart.getWorld().playSound(
+                minecart.getLocation(),
+                Sound.BLOCK_RESPAWN_ANCHOR_CHARGE,
+                2.0f,
+                0.2f
+        );
     }
     public static void stop(RideableMinecart minecart, int depth){
         minecart.setVelocity(minecart.getVelocity().multiply(0));
         minecart.setMaxSpeed(0);
+
+        minecart.getWorld().spawnParticle(
+                Particle.TRIAL_SPAWNER_DETECTION,
+                minecart.getLocation(),
+                20,
+                0.5, 0.1, 0.5,
+                0.2
+        );
+        minecart.getWorld().playSound(
+                minecart.getLocation(),
+                Sound.BLOCK_GRINDSTONE_USE,
+                2.0f,
+                2.0f
+        );
 
         if(cars.containsKey(minecart)){
             for(Entity entity : cars.get(minecart)){
@@ -401,6 +428,10 @@ public class Minecarts extends Vehicles {
     }
     public static void minecartCrushed(RideableMinecart minecart, Minecart minecart_crushed){
         if(minecart_crushed.isInsideVehicle()) return;
+
+        if(Minecarts.hookedMap.containsKey(minecart_crushed)){
+            if(Minecarts.hookedMap.get(minecart_crushed).equals(minecart)) return;
+        }
 
         vehicleCrushedSound(minecart);
 

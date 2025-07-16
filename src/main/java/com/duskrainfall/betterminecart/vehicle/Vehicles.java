@@ -90,6 +90,19 @@ public class Vehicles {
         return false;
     }
 
+    public static void rainbowTail(Vehicle vehicle, double speed){
+        var world = vehicle.getWorld();
+        var location = vehicle.getLocation();
+        int count = (int) Math.round(speed);
+        world.spawnParticle(Particle.RAID_OMEN, location, count, 0.5, 0.1, 0.5);
+        world.spawnParticle(Particle.TRIAL_OMEN, location, count, 0.5, 0.1, 0.5);
+        location.add(0, 0.5, 0);
+        world.spawnParticle(Particle.GLOW, location, count, 0.5, 0.5, 0.5);
+        world.spawnParticle(Particle.WAX_ON, location, count, 0.5, 0.5, 0.5);
+        world.spawnParticle(Particle.WAX_OFF, location, count, 0.5, 0.5, 0.5);
+        world.spawnParticle(Particle.HAPPY_VILLAGER, location, count, 0.5, 0.5, 0.5);
+    }
+
     private static void vehicleExplosionAnimation(Vehicle vehicle){
         vehicle.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, vehicle.getLocation(),
                 5, 1, 1, 1

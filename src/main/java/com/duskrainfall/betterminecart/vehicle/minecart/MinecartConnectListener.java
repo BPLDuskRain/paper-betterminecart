@@ -25,30 +25,40 @@ public class MinecartConnectListener implements Listener {
                 if(!player.isInsideVehicle()) return;
 
                 Entity entity = player.getVehicle();
-                if(entity != null){
-                    if(entity.equals(minecart)) {
-                        player.sendActionBar(Component.text("编组失败：不能和自己编组", NamedTextColor.RED));
+                if(entity == null) return;
+
+                if(entity.equals(minecart)) {
+                    player.sendActionBar(Component.text("编组失败：不能和自己编组", NamedTextColor.RED));
+                    return;
+                }
+
+                if(Minecarts.hookedMap.containsKey(entity)){
+                    player.sendActionBar(Component.text("编组失败：已经编组到列车", NamedTextColor.RED));
+                    return;
+                }
+
+                if(Minecarts.hookedMap.containsKey(minecart)){
+                    if(Minecarts.hookedMap.get(minecart).equals(entity)){
+                        player.sendActionBar(Component.text("编组失败：不允许互相编组", NamedTextColor.RED));
                         return;
                     }
+                }
 
-                    if(Minecarts.hookedMap.containsKey(entity)){
-                        player.sendActionBar(Component.text("编组失败：已经编组到列车", NamedTextColor.RED));
-                        return;
-                    }
+                if(!Minecarts.cars.containsKey(minecart)){
+                    Minecarts.cars.put(minecart, new ArrayList<>());
+                }
 
-                    if(!Minecarts.cars.containsKey(minecart)){
-                        Minecarts.cars.put(minecart, new ArrayList<>());
-                    }
-
-                    List<Entity> list = Minecarts.cars.get(minecart);
-                    if(list.size() < Minecarts.MAX_CAR_NUM){
-                        list.add(entity);
-                    }
-                    else{
-                        player.sendActionBar(Component.text("编组失败：单机编组数量过大", NamedTextColor.RED));
-                        return;
-                    }
-                    Minecarts.hookedMap.put(entity, minecart);
+                List<Entity> list = Minecarts.cars.get(minecart);
+                if(list.size() < Minecarts.MAX_CAR_NUM){
+                    list.add(entity);
+                }
+                else{
+                    player.sendActionBar(Component.text("编组失败：单机编组数量过大", NamedTextColor.RED));
+                    return;
+                }
+                Minecarts.hookedMap.put(entity, minecart);
+                if(entity instanceof RideableMinecart){
+                    ((RideableMinecart) entity).setMaxSpeed(0.0);
                 }
                 player.sendActionBar(Component.text("编组成功", NamedTextColor.GREEN));
             }

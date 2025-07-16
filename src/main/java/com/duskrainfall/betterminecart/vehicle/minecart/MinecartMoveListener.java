@@ -177,6 +177,7 @@ public class MinecartMoveListener implements Listener {
         if(Minecarts.hookedMap.containsKey(minecart)) return;
 
         double speed = Minecarts.getSpeed(e);
+        Minecarts.rainbowTail(minecart, speed);
 
         if(minecart.hasGravity()){
 //            Minecarts.soundOnRail(minecart, speed);

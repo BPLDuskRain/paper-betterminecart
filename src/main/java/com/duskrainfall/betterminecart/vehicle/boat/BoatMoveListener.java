@@ -105,6 +105,8 @@ public class BoatMoveListener implements Listener {
         if(boat.isEmpty()) return;
         if(!(boat.getPassengers().get(0) instanceof Player player)) return;
 
+        Boats.rainbowTail(boat, 0);
+
         boolean floating = Optional.ofNullable(Boats.boatFloatMap.get(boat)).orElse(false);
         int magnet_factor = Optional.ofNullable(Boats.boatMagnetMap.get(boat)).orElse(0);
         if(floating){
