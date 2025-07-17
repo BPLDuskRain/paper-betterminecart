@@ -1,12 +1,9 @@
 package com.duskrainfall.betterminecart.vehicle;
 
-import com.duskrainfall.betterminecart.vehicle.boat.Boats;
 import com.duskrainfall.betterminecart.vehicle.minecart.Minecarts;
-import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Vehicle;
-import org.bukkit.entity.minecart.RideableMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -15,39 +12,10 @@ import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
 
 public class KillEntityListener implements Listener {
-    private static void removeHooked(Entity entity){
-        if(Minecarts.hookedMap.containsKey(entity)){
-            var hooked = Minecarts.hookedMap.get(entity);
-            if(Minecarts.cars.containsKey(hooked)){
-                Minecarts.cars.get(hooked).remove(entity);
-            }
-        }
-    }
-
     @EventHandler
     public void destroyVehicle(VehicleDestroyEvent e){
         Vehicle vehicle = e.getVehicle();
-        Vehicles.listenGapMap.remove(vehicle);
-        Vehicles.crushedCds.remove(vehicle);
-        Vehicles.crushedSoundCds.remove(vehicle);
-        if(Vehicles.speedStateBar.containsKey(vehicle)){
-            Vehicles.speedStateBar.get(vehicle).removeAll();
-            Vehicles.speedStateBar.remove(vehicle);
-        }
-        if(vehicle instanceof RideableMinecart minecart){
-//            Minecarts.soundOver(minecart);
-            Minecarts.moveSoundCds.remove(minecart);
-            Minecarts.cars.remove(minecart); // 本车被钩时整个移除
-        }
-        // 移除被钩车对本车的联系
-        removeHooked(vehicle);
-        // 移除钩子映射
-        Minecarts.hookedMap.remove(vehicle);
-
-        if(vehicle instanceof Boat boat){
-            Boats.boatFloatMap.remove(boat);
-            Boats.boatMagnetMap.remove(boat);
-        }
+        AfterKilling.afterDestroyVehicle(vehicle);
     }
 
     @EventHandler
@@ -68,8 +36,10 @@ public class KillEntityListener implements Listener {
         Entity entity = e.getEntity();
         Vehicles.crushedCds.remove(entity);
 
-        removeHooked(entity);
-        Minecarts.hookedMap.remove(entity);
+        // 移除车头对本实体的联系
+        AfterKilling.removeHooked(entity);
+        // 移除本实体对车头的联系
+        Minecarts.toHead.remove(entity);
     }
 
     @EventHandler

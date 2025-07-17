@@ -49,8 +49,8 @@ public class Minecarts extends Vehicles {
 
     public final static int MAX_CAR_NUM = 8;
     public final static int MAX_CAR_LENGTH = 8;
-    public final static ConcurrentHashMap<Entity, RideableMinecart> hookedMap = new ConcurrentHashMap<>();
-    public final static ConcurrentHashMap<RideableMinecart, List<Entity>> cars = new ConcurrentHashMap<>();
+    public final static ConcurrentHashMap<Entity, RideableMinecart> toHead = new ConcurrentHashMap<>();
+    public final static ConcurrentHashMap<RideableMinecart, List<Entity>> toCars = new ConcurrentHashMap<>();
 
 //    public static void soundOnRail(RideableMinecart minecart, double speed){
 //        if(moveSoundCds.containsKey(minecart)){
@@ -233,8 +233,8 @@ public class Minecarts extends Vehicles {
                 2.0f
         );
 
-        if(cars.containsKey(minecart)){
-            for(Entity entity : cars.get(minecart)){
+        if(toCars.containsKey(minecart)){
+            for(Entity entity : toCars.get(minecart)){
                 if(!(entity instanceof RideableMinecart minecartCar)) continue;
                 if(depth < MAX_CAR_LENGTH){
                     stop(minecartCar, depth + 1);
@@ -392,8 +392,8 @@ public class Minecarts extends Vehicles {
     }
 
     public static void vehicleExplosion(RideableMinecart minecart){
-        if(cars.containsKey(minecart)){
-            for(var car : cars.get(minecart)){
+        if(toCars.containsKey(minecart)){
+            for(var car : toCars.get(minecart)){
                 car.setGravity(true);
             }
         }
@@ -429,8 +429,8 @@ public class Minecarts extends Vehicles {
     public static void minecartCrushed(RideableMinecart minecart, Minecart minecart_crushed){
         if(minecart_crushed.isInsideVehicle()) return;
 
-        if(Minecarts.hookedMap.containsKey(minecart_crushed)){
-            if(Minecarts.hookedMap.get(minecart_crushed).equals(minecart)) return;
+        if(Minecarts.toHead.containsKey(minecart)){
+            if(Minecarts.toHead.get(minecart).equals(minecart_crushed)) return;
         }
 
         vehicleCrushedSound(minecart);

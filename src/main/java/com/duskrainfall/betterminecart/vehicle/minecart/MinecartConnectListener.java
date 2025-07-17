@@ -32,23 +32,23 @@ public class MinecartConnectListener implements Listener {
                     return;
                 }
 
-                if(Minecarts.hookedMap.containsKey(entity)){
+                if(Minecarts.toHead.containsKey(entity)){
                     player.sendActionBar(Component.text("编组失败：已经编组到列车", NamedTextColor.RED));
                     return;
                 }
 
-                if(Minecarts.hookedMap.containsKey(minecart)){
-                    if(Minecarts.hookedMap.get(minecart).equals(entity)){
+                if(Minecarts.toHead.containsKey(minecart)){
+                    if(Minecarts.toHead.get(minecart).equals(entity)){
                         player.sendActionBar(Component.text("编组失败：不允许互相编组", NamedTextColor.RED));
                         return;
                     }
                 }
 
-                if(!Minecarts.cars.containsKey(minecart)){
-                    Minecarts.cars.put(minecart, new ArrayList<>());
+                if(!Minecarts.toCars.containsKey(minecart)){
+                    Minecarts.toCars.put(minecart, new ArrayList<>());
                 }
 
-                List<Entity> list = Minecarts.cars.get(minecart);
+                List<Entity> list = Minecarts.toCars.get(minecart);
                 if(list.size() < Minecarts.MAX_CAR_NUM){
                     list.add(entity);
                 }
@@ -56,7 +56,7 @@ public class MinecartConnectListener implements Listener {
                     player.sendActionBar(Component.text("编组失败：单机编组数量过大", NamedTextColor.RED));
                     return;
                 }
-                Minecarts.hookedMap.put(entity, minecart);
+                Minecarts.toHead.put(entity, minecart);
                 if(entity instanceof RideableMinecart){
                     ((RideableMinecart) entity).setMaxSpeed(0.0);
                 }

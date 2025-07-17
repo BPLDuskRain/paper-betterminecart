@@ -129,6 +129,7 @@ public class Vehicles {
         vehicleExplosionAnimation(vehicle);
         Springs.createSpring(vehicle, 1200);
         vehicle.remove();
+        AfterKilling.afterDestroyVehicle(vehicle);
     }
 
     public static void imbalance(LivingEntity livingEntity){

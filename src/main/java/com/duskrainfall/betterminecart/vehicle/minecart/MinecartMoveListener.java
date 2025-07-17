@@ -174,7 +174,7 @@ public class MinecartMoveListener implements Listener {
         if(minecart.isEmpty()) return;
         if(!(minecart.getPassengers().get(0) instanceof Player)) return;
 
-        if(Minecarts.hookedMap.containsKey(minecart)) return;
+        if(Minecarts.toHead.containsKey(minecart)) return;
 
         double speed = Minecarts.getSpeed(e);
         Minecarts.rainbowTail(minecart, speed);
@@ -218,7 +218,7 @@ public class MinecartMoveListener implements Listener {
     public void OnHooked(VehicleMoveEvent e){
         if(!(e.getVehicle() instanceof RideableMinecart minecart)) return;
 
-        if(!Minecarts.cars.containsKey(minecart)) return;
+        if(!Minecarts.toCars.containsKey(minecart)) return;
 
         boolean hasGravity = minecart.hasGravity();
         double headMaxSpeed = minecart.getMaxSpeed();
@@ -226,7 +226,7 @@ public class MinecartMoveListener implements Listener {
         double length = headVelocity.length();
         Vector offset =  headVelocity.clone().multiply(length > 0.6 ? 1.2/length : 3);
         Location headLocation = minecart.getLocation().subtract(offset);
-        for(Entity entity : Minecarts.cars.get(minecart)){
+        for(Entity entity : Minecarts.toCars.get(minecart)){
             if(!entity.isValid()) continue;
 
             entity.setGravity(hasGravity);
