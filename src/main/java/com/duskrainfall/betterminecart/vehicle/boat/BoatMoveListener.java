@@ -73,6 +73,8 @@ public class BoatMoveListener implements Listener {
                             + " block/tick"
                     , NamedTextColor.GREEN));
 
+            if(!Boats.boatFloatMap.getOrDefault(boat, false)) return;
+
             if(speed > Boats.FIRE){
                 player.setFreezeTicks(player.getFreezeTicks() + Boats.FREEZE_TICK);
                 player.sendActionBar(Component.text("热过载：" + player.getFreezeTicks()
@@ -92,7 +94,7 @@ public class BoatMoveListener implements Listener {
             }
         }
 
-        boat.setVisualFire(speed > Boats.FIRE);
+        boat.setVisualFire(Optional.ofNullable(Boats.boatFloatMap.get(boat)).orElse(false) && speed > Boats.FIRE);
 
         if(!Vehicles.speedStateBar.containsKey(boat)) return;
         BossBar bossBar = Vehicles.speedStateBar.get(boat);

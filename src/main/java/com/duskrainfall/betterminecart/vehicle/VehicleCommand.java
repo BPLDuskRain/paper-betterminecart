@@ -6,6 +6,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Vehicle;
 import org.bukkit.entity.minecart.RideableMinecart;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,6 +34,12 @@ public class VehicleCommand implements CommandExecutor {
                 if(vehicle instanceof RideableMinecart minecart){
                     Minecarts.back(minecart);
                     sender.sendMessage("§a两极反转！");
+                }
+                break;
+            case "lock": case "l":
+                if(vehicle instanceof Vehicle v){
+                    Vehicles.lock(v);
+                    sender.sendMessage("§e视角锁定已切换");
                 }
                 break;
             case "reset": case"r":

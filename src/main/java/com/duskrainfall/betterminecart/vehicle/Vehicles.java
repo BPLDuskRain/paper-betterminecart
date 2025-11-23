@@ -14,7 +14,8 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
-import java.util.HashMap;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Vehicles {
@@ -23,7 +24,7 @@ public class Vehicles {
     public final static int LISTEN_GAP = 20;
     public final static ConcurrentHashMap<Vehicle, Integer> listenGapMap = new ConcurrentHashMap<>();
 
-    public final static HashMap<Vehicle, BossBar> speedStateBar = new HashMap<>();
+    public final static ConcurrentHashMap<Vehicle, BossBar> speedStateBar = new ConcurrentHashMap<>();
 
     private final static int CRUSHED_CD = 20;
     public final static ConcurrentHashMap<Entity, Integer> crushedCds = new ConcurrentHashMap<>();
@@ -32,6 +33,44 @@ public class Vehicles {
     public final static ConcurrentHashMap<Vehicle, Integer> crushedSoundCds = new ConcurrentHashMap<>();
 
     public final static ConcurrentHashMap<Player, Integer> controlCds = new ConcurrentHashMap<>();
+
+    public final static ConcurrentHashMap<Vehicle, View> viewLock = new ConcurrentHashMap<>();
+    public final static int MAXSIZE = 40;
+
+    public static class View{
+        private boolean view;
+        private final Vector sum = new Vector(0, 0, 0);
+        private final Deque<Vector> queue = new ArrayDeque<>(MAXSIZE);
+        private double speed;
+
+        public View(boolean view) {
+            this.view = view;
+        }
+
+        public boolean isView() {
+            return view;
+        }
+        public void setView(boolean view) {
+            this.view = view;
+        }
+        public void notView(){
+            this.view = !this.view;
+        }
+
+        public Vector getSum(){
+            return sum;
+        }
+        public Deque<Vector> getQueue() {
+            return queue;
+        }
+
+        public double getSpeed() {
+            return speed;
+        }
+        public void setSpeed(double speed) {
+            this.speed = speed;
+        }
+    }
 
     public static double getSpeed(VehicleMoveEvent e){
         Location from = e.getFrom();
@@ -101,6 +140,14 @@ public class Vehicles {
         world.spawnParticle(Particle.WAX_ON, location, count, 0.5, 0.5, 0.5);
         world.spawnParticle(Particle.WAX_OFF, location, count, 0.5, 0.5, 0.5);
         world.spawnParticle(Particle.HAPPY_VILLAGER, location, count, 0.5, 0.5, 0.5);
+    }
+
+    public static void lock(Vehicle vehicle){
+        if(!viewLock.containsKey(vehicle)){
+            viewLock.put(vehicle, new View(true));
+        }else {
+            viewLock.get(vehicle).notView();
+        }
     }
 
     private static void vehicleExplosionAnimation(Vehicle vehicle){

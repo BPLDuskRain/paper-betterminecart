@@ -106,6 +106,7 @@ public final class BetterMinecart extends JavaPlugin {
         pluginManager.registerEvents(new DriveListener(), this);
         pluginManager.registerEvents(new CollisionListener(), this);
         pluginManager.registerEvents(new KillEntityListener(), this);
+        pluginManager.registerEvents(new VehicleMoveListener(), this);
 
         pluginManager.registerEvents(new DropItemListener(), this);
 

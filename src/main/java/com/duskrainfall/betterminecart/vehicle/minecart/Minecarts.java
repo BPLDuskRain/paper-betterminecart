@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Minecarts extends Vehicles {
+    public final static double OUT = 0.4d;
     public final static double MAX = 3.2d;
     public final static double MAX_RAIL = 1.5d;
     public final static double MIN = 0.05d;

@@ -18,6 +18,8 @@ public class AfterKilling {
     }
 
     public static void afterDestroyVehicle(Vehicle vehicle){
+        Vehicles.viewLock.remove(vehicle);
+
         Vehicles.listenGapMap.remove(vehicle);
         Vehicles.crushedCds.remove(vehicle);
         Vehicles.crushedSoundCds.remove(vehicle);
